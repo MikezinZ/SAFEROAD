@@ -4,7 +4,7 @@ const sequelize = require('../config/database');
 const User = require('./user');
 
 // Importação do modelo de usuário.
-Module.exports = {
+module.exports = {
     sequelize,
     User
 };
