@@ -1,4 +1,4 @@
-const expresss = require('express');
+const express = require('express');
 const userController = require('../controllers/userController');
 const { body } = require('express-validator');
 const authMiddleware = require('../middleware/auth');
@@ -8,23 +8,23 @@ const router = express.Router(); // Cria uma instância do roteador
 
 // Define as rotas da API de usuários
 /**
- * @swagger
+
  * /api/users:
- *   get: 
- *    summary: Obter todos os usuários
- *    tags: [Users]
- *    security:
- *     - bearerAuth: []
+ *   get:
+ *     summary: Obter todos os usuários
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
- *      200:
- *       description: Lista de usuários
+ *       200:
+ *         description: Lista de usuários
  */
 
-Router.get('/', authMiddleware, userController.getAllUsers);
+router.get('/', authMiddleware, userController.getAllUsers);
 
 
 /**
- * @swagger
+
  * /api/users/{id}:
  *   get:
  *   summary: Obter usuário por ID
@@ -44,7 +44,7 @@ Router.get('/', authMiddleware, userController.getAllUsers);
 router.get('/:id', authMiddleware, userController.getUserById);
 
 /**
- * @swagger
+
  * /api/users:
  *  post:
  *    summary: Criar um novo usuário
@@ -80,7 +80,7 @@ router.post('/',
 );
 
 /**
- * @swagger
+
  * /api/users/{id}:
  *   put:
  *     summary: Atualizar usuário por ID
@@ -108,10 +108,10 @@ router.post('/',
  *      200:
  * *       description: Usuário atualizado com sucesso
  */
-router.put('/:id', authMiddleware, userController.updtateUser);
+router.put('/:id', authMiddleware, userController.updateUser);
 
 /**
- * @swagger
+
  * /api/users/{id}:
  *   delete:
  *     summary: Deletar usuário por ID

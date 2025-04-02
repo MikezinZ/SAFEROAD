@@ -29,9 +29,26 @@ const swaggerOptions = {
                 url: `http://localhost:${PORT}`,
             },
         ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            }
+        }
     },
-    apis: ['./src/routes/*.js'],
+    apis: ['./src/routes/*.js'], // Caminho para os arquivos com as anotações Swagger
 };
+
+// Middleware para tratar erros do Swagger
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: "Bad request - invalid JSON" });
+    }
+    next();
+});
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
@@ -40,12 +57,27 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
-// sincronização do banco de dados e inicialização do servidor
-sequelize.sync().then(() => {
-    app.listen(PORT, () => {
-        console.log(`🔥 Servidor rodando na porta ${PORT}`);
-        console.log(`📄 Documentação do Swagger disponível em http://localhost:${PORT}/api-docs`);
-    });
+// tratamento de erro global
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Algo deu errado!');
 });
 
-module.exports = app;
+// enedpoint de saúde
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK' });
+});
+
+// sincronização do banco de dados e inicialização do servidor
+sequelize.sync()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`🔥 Servidor rodando na porta ${PORT}`);
+            console.log(`📄 Documentação: http://localhost:${PORT}/api-docs`);
+        });
+    })
+    .catch(err => {
+        console.error('Falha ao sincronizar com o banco de dados:', err);
+    });
+
+module.exports = app; 

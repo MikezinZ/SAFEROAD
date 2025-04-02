@@ -46,7 +46,7 @@ class AuthController {
                 token,
                 user: {
                     id: user.id,
-                    username: user.username,
+                    username: user.nome,
                     email: user.email
                 }
             });
