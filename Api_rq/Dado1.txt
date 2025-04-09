@@ -1,0 +1,19 @@
+TESTE do get
+
+
+[
+    {
+        "id": 1,
+        "nome": "Mike",
+        "email": "mike@gmail.com"
+    },
+
+    {
+	"id": 4,
+    	"nome": "Miguelito",
+    	"email": "Miguelito@gmail.com",
+    	"senha": "senha123"
+	"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiZW1haWwiOiJNaWd1ZWxpdG9AZ21haWwuY29tIiwiaWF0IjoxNzQ0MjAzNjUzLCJleHAiOjE3NDQyOTAwNTN9.1q1CsVtAA_lY4rlSevtXWosAAhg7rWHiyH4SYZBN1Jw",
+}
+]
+

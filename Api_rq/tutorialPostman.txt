@@ -1,0 +1,22 @@
+POST - criar usuário
+http://localhost:3000/api/auth/register
+
+LOGIN - POST
+http://localhost:3000/api/auth/login
+
+GET - Fazer Login e usar o token do login no Authorization/AuthType/Bearer Token
+http://localhost:3000/api/users
+
+
+GET - Obter usuário específico - (usar token)
+http://localhost:3000/api/users/1
+
+POST - Criar novo usuário como admin - (usar o token)
+http://localhost:3000/api/users
+
+PUT - atualizar usuário - (usar token)
+http://localhost:3000/api/users/1
+
+DELETE - deletar usuário - (usar token)
+http://localhost:3000/api/users/1
+

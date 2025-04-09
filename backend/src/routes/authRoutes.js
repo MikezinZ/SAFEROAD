@@ -4,6 +4,9 @@ const { body } = require('express-validator');
 
 const router = express.Router();
 
+
+// Swagger sem funcionar (quebrando código)
+
 // Define as rotas da API de autenticação
 /**
  * 

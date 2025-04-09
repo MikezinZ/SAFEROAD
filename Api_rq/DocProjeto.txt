@@ -1,0 +1,701 @@
+SAFEROAD
+ │ backend (pendente)
+ │ ├── node_modules/ [✓]
+ │ ├── src/ [✓]
+ │ │   ├── config/ [✓]
+ │ │   │   └── databases.js [✓]
+ │ │   ├── controllers/ [✓]
+ │ │   │   ├── authController/ [✓]
+ │ │   │   └── userController/ [✓]
+ │ │   ├── middleware/ [✓]
+ │ │   │   └── auth.js [✓]
+ │ │   ├── models/ [✓]
+ │ │   │   ├── index.js [✓]
+ │ │   │   └── users.js [✓]
+ │ │   ├── routes/ [✓]
+ │ │   │   ├── authRouter.js [✓]
+ │ │   │   └── userRouter.js [✓]
+ │ │   └── tests/ [✓]
+ │ │       ├── auth.tests.js [✓]
+ │ │       └── index.js [✓]
+ │ ├── env/ [✓]
+ │ │   └── databases.sqlite [✓]
+ │ ├── package-lock.json [✓]
+ │ └── package.json [✓]
+ ├── .gitattributes [✓]
+ ├── project.txt [✓]
+ └── README.md [✓]
+
+ESTRUTURA DE CÓDIGO COMPLETA;
+
+backend/src/index.js:
+// importaçãoa de módulos
+const express = require('express');
+const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsDoc = require('swagger-jsdoc');
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
+const { sequelize } = require('./models');
+
+// Inicialização do express e configuração do servidor
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware para permitir requisições de diferentes origens
+app.use(cors());
+app.use(express.json());
+
+// configuração do swagger
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'User Management API',
+            version: '1.0.0',
+            description: 'API for user management and authentication',
+        },
+        servers: [
+            {
+                url: `http://localhost:${PORT}`,
+            },
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            }
+        }
+    },
+    apis: ['./src/routes/*.js'], // Caminho para os arquivos com as anotações Swagger
+};
+
+// Middleware para tratar erros do Swagger
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: "Bad request - invalid JSON" });
+    }
+    next();
+});
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Rotas 
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+
+// tratamento de erro global
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Algo deu errado!');
+});
+
+// enedpoint de saúde
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK' });
+});
+
+// sincronização do banco de dados e inicialização do servidor
+sequelize.sync()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`🔥 Servidor rodando na porta ${PORT}`);
+            console.log(`📄 Documentação: http://localhost:${PORT}/api-docs`);
+        });
+    })
+    .catch(err => {
+        console.error('Falha ao sincronizar com o banco de dados:', err);
+    });
+
+module.exports = app; 
+
+backend/src/config/database.js:
+const { Sequelize } = require('sequelize');
+const path = require('path');
+
+const sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: path.join(__dirname, '../../database.sqlite'),
+    logging: false
+});
+
+module.exports = sequelize;
+
+backend/src/controllers/authController.sj:
+const jwt = require("jsonwebtoken");
+const { User } = require('../models');
+
+const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta"; // Substitua pela sua chave secreta real
+
+
+// Controller de autenticação
+// Este controller gerencia o login e o registro de usuários
+class AuthController {
+    async login(req, res) {
+        // Método para autenticar um usuário    
+        try {
+            const { email, senha } = req.body;
+            const user = await User.findOne({ where: { email } });
+            if (!user) {
+                return res.status(401).json({ message: "Credenciais inválidas" });
+            }
+
+            const isValidPassword = await user.validatePassword(senha);
+            if (!isValidPassword) {
+                return res.status(401).json({ message: "Credenciais inválidas" });
+            }
+            const token = jwt.sign(
+                { id: user.id, email: user.email },
+                JWT_SECRET,
+                { expiresIn: "24h" }
+            );
+
+            res.json({ token });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Método para registrar um novo usuário
+    async register(req, res) {
+        try {
+            const user = await User.create(req.body);
+            const token = jwt.sign(
+                { id: user.id, email: user.email },
+                JWT_SECRET,
+                { expiresIn: "24h" }
+            );
+
+            res.status(201).json({
+                token,
+                user: {
+                    id: user.id,
+                    username: user.nome,
+                    email: user.email
+                }
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = new AuthController();
+
+backend/src/controller/userController.js:
+
+const { User } = require('../models');
+
+
+// a classe contém os métodos responsáveis por manipular e responder às requisições HTTP relacionadas a usuários.
+class UserController {
+
+    // Retorna todos os usuários da base de dados.
+    async getAllUsers(req, res) { // 
+        try {
+            const users = await User.findAll({
+                attributes: ['id', 'nome', 'email']
+            });
+            res.json(users);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+
+    //  Recupera um usuário específico pelo ID.
+    async getUserById(req, res) {
+        try {
+            const user = await User.findByPk(req.params.id, {
+                attributes: ['id', 'nome', 'email']
+            });
+            if (!user) {
+                return res.status(404).json({ message: 'Usuario não encontrado' });
+            }
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Cria um novo usuário
+    async createUser(req, res) {
+        try {
+            const user = await User.create(req.body);
+            res.status(201).json({
+                id: user.id,
+                nome: user.nome,
+                email: user.email
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
+    // Atualiza os dados de um usuário específico.
+    async updateUser(req, res) {
+        try {
+            const user = await User.findByPk(req.params.id);
+            if (!user) {
+                return res.status(404).json({ message: 'Usuario não encontrado' });
+            }
+            await user.update(req.body);
+            res.json({
+                id: user.id,
+                nome: user.nome,
+                email: user.email
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    //Deleta um usuário específico.
+    async deleteUser(req, res) {
+        try {
+            const user = await User.findByPk(req.params.id);
+            if (!user) {
+                return res.status(404).json({ message: 'Usuario não encontrado' });
+            }
+            await user.destroy();
+            res.status(204).send();
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = new UserController();
+
+backend/src/middleware/auth.js:
+
+const jwt = require('jsonwebtoken'); // Importa o módulo jsonwebtoken
+
+const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta'; // Define a chave secreta para assinar os tokens JWT. Em produção, use uma variável de ambiente.
+
+
+// Middleware de autenticação
+// Verifica se o token JWT é válido e adiciona os dados do usuário à requisição
+const authMiddleware = (req, res, next) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+        return res.status(401).json({ message: 'Autenticação necessária' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(401).json({ message: 'Token inválido' });
+    }
+};
+
+module.exports = authMiddleware;
+
+
+backend/src/models/index.js:
+
+const sequelize = require('../config/database');
+const User = require('./user');
+
+module.exports = {
+    sequelize,
+    User
+};
+
+
+backend/src/models/user.js:
+
+
+// importação do sequelize e bcryptjs
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const bcrypt = require('bcryptjs');
+
+// Define um modelo de usuário com os campos id, nome, email e senha
+const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    nome: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+            isEmail: true,
+        },
+    },
+    senha: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+
+},
+    // o bloco de baixo é um hook do sequelize que executa antes de criar um usuário
+    {
+        hooks: {
+            beforeCreate: async (user) => {
+                if (user.senha) {
+                    const salt = await bcrypt.genSalt(10);
+                    user.senha = await bcrypt.hash(user.senha, salt);
+                }
+            }
+        }
+
+    }
+);
+
+// Define um método para verificar se a senha fornecida corresponde à senha armazenada no banco de dados
+// O método usa bcrypt para comparar a senha fornecida com a senha armazenada
+User.prototype.validatePassword = async function (senha) {
+    return await bcrypt.compare(senha, this.senha);
+}
+
+module.exports = User;
+
+
+
+backend/src/routes/authRoutes.js:
+
+const express = require('express');
+const authController = require('../controllers/authController');
+const { body } = require('express-validator');
+
+const router = express.Router();
+
+
+// Swagger sem funcionar (quebrando código)
+
+// Define as rotas da API de autenticação
+/**
+ * 
+ * tags:
+ *   name: Auth
+ *   description: Autenticação de usuários
+ */
+
+/**
+ *
+ * /api/auth/login:
+ *   post:
+ *     summary: Login do usuário
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               senha:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login bem sucedido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ */
+
+router.post('/login',
+    [
+        body('email').isEmail(),
+        body('senha').exists()
+    ],
+    authController.login
+);
+
+
+/**
+ * 
+ * /api/auth/register:
+ *   post:
+ *     summary: Registrar novo usuário
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               senha:
+ *                 type: string
+ *             required:
+ *               - nome
+ *               - email
+ *               - senha
+ *     responses:
+ *       201:
+ *         description: Usuário registrado com sucesso
+ *       400:
+ *         description: Dados inválidos
+ */
+
+// Define a rota para registrar um novo usuário
+router.post('/register',
+    [
+        body('nome').notEmpty(),
+        body('email').isEmail(),
+        body('senha').isLength({ min: 6 })
+    ],
+    authController.register
+);
+
+module.exports = router;
+
+
+backend/src/routes/userRoutes.js:
+const express = require('express');
+const userController = require('../controllers/userController');
+const { body } = require('express-validator');
+const authMiddleware = require('../middleware/auth');
+
+const router = express.Router(); // Cria uma instância do roteador
+
+
+// Define as rotas da API de usuários
+/**
+
+ * /api/users:
+ *   get:
+ *     summary: Obter todos os usuários
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de usuários
+ */
+
+router.get('/', authMiddleware, userController.getAllUsers);
+
+
+/**
+
+ * /api/users/{id}:
+ *   get:
+ *   summary: Obter usuário por ID
+ *   tags: [Users]
+ *   security:
+ *    - bearerAuth: []
+ *  parameters:
+ *    - in: path
+ *     name: id
+ *     required: true
+ *     schema:
+ *      type: integer
+ *  responses:
+ *     200:
+ *      description: Detalhes do usuário
+ */
+router.get('/:id', authMiddleware, userController.getUserById);
+
+/**
+
+ * /api/users:
+ *  post:
+ *    summary: Criar um novo usuário
+ *    tags: [Users]
+ *    security:
+ *     - bearerAuth: []
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *                nome:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                senha:
+ *                  type: string
+ *     responses:
+ *         201:
+ *           description: Usuário criado com sucesso
+ */
+// Define a rota para criar um novo usuário
+// O middleware de autenticação é aplicado a esta rota
+router.post('/',
+    [
+        body('nome').notEmpty(),
+        body('email').isEmail(),
+        body('senha').isLength({ min: 6 })
+    ],
+    userController.createUser
+);
+
+/**
+
+ * /api/users/{id}:
+ *   put:
+ *     summary: Atualizar usuário por ID
+ *     tags: [Users]
+ *     security:
+ *      - bearerAuth: []
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: integer
+ *    requestBody:
+ *     required: true
+ *     content:
+ *       application/json:
+ *         schema:
+ *          type: object
+ *         properties:
+ *          nome:
+ *           type: string
+ *          email:
+ *           type: string
+ *    responses:
+ *      200:
+ * *       description: Usuário atualizado com sucesso
+ */
+router.put('/:id', authMiddleware, userController.updateUser);
+
+/**
+
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Deletar usuário por ID
+ *     tags: [Users]
+ *     security:
+ *        - bearerAuth: []
+ *    parameters:
+ *     - in: path
+ *       name: id
+ *      required: true
+ *      schema:
+ *       type: integer
+ *    responses:
+ *     204:
+ *     description: Usuário deletado com sucesso
+ */
+router.delete('/:id', authMiddleware, userController.deleteUser);
+
+module.exports = router;
+
+
+
+backend/src/tests/auth.test.js:
+
+const request = require('supertest');
+const app = require('../index');
+const { User } = require('../models');
+
+describe('Endpoints de Autenticacao', () => {
+    beforeEach(async () => {
+        await User.destroy({ where: {} });
+    });
+
+    describe('POST /api/auth/register', () => {
+        it('deve criar um novo usuário', async () => {
+            const res = await request(app)
+                .post('/api/auth/register')
+                .send({
+                    nome: 'testuser',
+                    email: 'test@test.com',
+                    senha: 'password123'
+                });
+
+            expect(res.statusCode).toEqual(201);
+            expect(res.body).toHaveProperty('token');
+            expect(res.body.user).toHaveProperty('id');
+        });
+    });
+
+    describe('POST /api/auth/login', () => {
+        beforeEach(async () => {
+            await request(app)
+                .post('/api/auth/register')
+                .send({
+                    nome: 'testuser',
+                    email: 'test@test.com',
+                    senha: 'password123'
+                });
+        });
+
+        it('deve fazer login no usuário existente', async () => {
+            const res = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'test@test.com',
+                    senha: 'password123'
+                });
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveProperty('token');
+        });
+    });
+});
+
+
+backend/.env:
+
+JWT_SECRET=SafeCode_Code
+PORT=3000
+
+backend/package.json:
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@fastify/swagger": "^9.4.2",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "sequelize": "^6.37.6",
+    "sqlite3": "^5.1.7",
+    "swagger-jsdoc": "^6.0.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9"
+  }
+}
+
+
+
+
+
