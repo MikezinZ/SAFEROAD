@@ -1,6 +1,8 @@
 TESTE do get
 
 
+
+
 [
     {
         "id": 1,
@@ -14,6 +16,14 @@ TESTE do get
     	"email": "Miguelito@gmail.com",
     	"senha": "senha123"
 	"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiZW1haWwiOiJNaWd1ZWxpdG9AZ21haWwuY29tIiwiaWF0IjoxNzQ0MjAzNjUzLCJleHAiOjE3NDQyOTAwNTN9.1q1CsVtAA_lY4rlSevtXWosAAhg7rWHiyH4SYZBN1Jw",
+
+    {
+        "id": 5,
+        "username": "Diego Ximenes",
+        "email": "Diego@lindo.com",
+        "senha": "Senha123"
+    }
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiZW1haWwiOiJEaWVnb0BsaW5kby5jb20iLCJpYXQiOjE3NDQyODgwMTksImV4cCI6MTc0NDM3NDQxOX0.234LoyzPTvx4M9MqvvEKRJAPTjvuv8wTnNBZUBVBMXo"
 }
 ]
 

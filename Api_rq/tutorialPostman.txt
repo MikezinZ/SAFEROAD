@@ -20,3 +20,5 @@ http://localhost:3000/api/users/1
 DELETE - deletar usuário - (usar token)
 http://localhost:3000/api/users/1
 
+
+Para rodar o servidor: npm run dev

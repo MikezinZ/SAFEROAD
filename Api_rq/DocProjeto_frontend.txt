@@ -1,0 +1,43 @@
+SAFEROAD/
+ ├── frontend/
+ │   ├── public/
+ │   │   ├── index.html
+ │   │   └── favicon.ico
+ │   ├── src/
+ │   │   ├── assets/
+ │   │   ├── components/
+ │   │   │   ├── Auth/
+ │   │   │   │   ├── LoginForm.jsx
+ │   │   │   │   └── RegisterForm.jsx
+ │   │   │   ├── Common/
+ │   │   │   │   ├── Header.jsx
+ │   │   │   │   ├── Footer.jsx
+ │   │   │   │   └── PrivateRoute.jsx
+ │   │   │   └── Users/
+ │   │   │       ├── UserList.jsx
+ │   │   │       ├── UserForm.jsx
+ │   │   │       └── UserProfile.jsx
+ │   │   ├── pages/
+ │   │   │   ├── HomePage.jsx
+ │   │   │   ├── LoginPage.jsx
+ │   │   │   ├── RegisterPage.jsx
+ │   │   │   ├── DashboardPage.jsx
+ │   │   │   └── UsersPage.jsx
+ │   │   ├── services/
+ │   │   │   ├── api.js
+ │   │   │   ├── authService.js
+ │   │   │   └── userService.js
+ │   │   ├── utils/
+ │   │   │   ├── auth.js
+ │   │   │   └── constants.js
+ │   │   ├── App.jsx
+ │   │   ├── index.jsx
+ │   │   └── styles/
+ │   │       ├── main.css
+ │   │       └── theme.js
+ │   └── package.json
+ │ 
+ ├── backend/  
+ ├── .gitattributes
+ ├── projeto.txt
+ └── README.md
