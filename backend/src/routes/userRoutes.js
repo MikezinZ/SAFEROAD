@@ -44,7 +44,6 @@ router.get('/', authMiddleware, userController.getAllUsers);
 router.get('/:id', authMiddleware, userController.getUserById);
 
 /**
-
  * /api/users:
  *  post:
  *    summary: Criar um novo usuário
