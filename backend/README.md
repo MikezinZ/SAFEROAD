@@ -103,7 +103,7 @@ O backend segue uma estrutura clara e modular, com as responsabilidades bem divi
 Essa abordagem organizada torna o backend muito mais fácil de entender, manter e escalar à medida que o projeto cresce!
 
 *GRUPO SAFEROAD* 
-*integrantes*:
+*integrantes*: 
 -Diego Ximenes
 -Lewi Gabriel 
 -Lucas Maciel 
