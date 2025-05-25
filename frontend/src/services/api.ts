@@ -1,6 +1,6 @@
 import { getToken } from './auth';
 
-const API_URL = 'http://localhost:3000/api'; // Change this to your backend URL
+const API_URL = 'http://localhost:3000/api';
 
 interface ApiResponse<T> {
   data?: T;
@@ -13,7 +13,7 @@ export async function apiRequest<T>(
   data?: any
 ): Promise<ApiResponse<T>> {
   const token = getToken();
-  
+
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method,
@@ -27,34 +27,34 @@ export async function apiRequest<T>(
     const responseData = await response.json();
 
     if (!response.ok) {
-      return { error: responseData.message || 'Something went wrong' };
+      return { error: responseData.message || 'Algo deu errado' };
     }
 
     return { data: responseData };
   } catch (error) {
-    console.error('API request failed:', error);
-    return { error: 'Network error. Please try again.' };
+    console.error('Falha na solicitação da API:', error);
+    return { error: 'Erro de rede. Tente novamente.' };
   }
 }
 
 // Common CRUD operations
 
-export async function getItems<T>(): Promise<ApiResponse<T[]>> {
-  return apiRequest<T[]>('/items');
+// O backend retorna um array de usuários
+export async function getUsers<T>(): Promise<ApiResponse<T[]>> {
+  return apiRequest<T[]>('/users');
 }
 
-export async function getItem<T>(id: string): Promise<ApiResponse<T>> {
-  return apiRequest<T>(`/items/${id}`);
+// O backend cria um usuário
+export async function createUser<T>(data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>('/users', 'POST', data);
 }
 
-export async function createItem<T>(data: Partial<T>): Promise<ApiResponse<T>> {
-  return apiRequest<T>('/items', 'POST', data);
+// O backend atualiza um usuário
+export async function updateUser<T>(id: string, data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>(`/users/${id}`, 'PUT', data);
 }
 
-export async function updateItem<T>(id: string, data: Partial<T>): Promise<ApiResponse<T>> {
-  return apiRequest<T>(`/items/${id}`, 'PUT', data);
-}
-
-export async function deleteItem(id: string): Promise<ApiResponse<{ success: boolean }>> {
-  return apiRequest<{ success: boolean }>(`/items/${id}`, 'DELETE');
+// O backend deleta um usuário
+export async function deleteUser(id: string): Promise<ApiResponse<{ success: boolean }>> {
+  return apiRequest<{ success: boolean }>(`/users/${id}`, 'DELETE');
 }

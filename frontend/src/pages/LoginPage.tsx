@@ -12,7 +12,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Welcome Back</h1>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Bem vindo de volta!</h1>
       <LoginForm />
     </div>
   );

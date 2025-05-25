@@ -13,7 +13,7 @@ const RegisterForm: React.FC = () => {
     password?: string;
     confirmPassword?: string;
   }>({});
-  
+
   const { register, error, clearError } = useAuth();
   const navigate = useNavigate();
 
@@ -27,28 +27,28 @@ const RegisterForm: React.FC = () => {
     let isValid = true;
 
     if (!username) {
-      errors.username = 'Username is required';
+      errors.username = 'Nome de usuário é obrigatório';
       isValid = false;
     }
 
     if (!email) {
-      errors.email = 'Email is required';
+      errors.email = 'Email é obrigatório';
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      errors.email = 'Email is invalid';
+      errors.email = 'Email inválido';
       isValid = false;
     }
 
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = 'Senha é obrigatória';
       isValid = false;
     } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = 'A senha deve ter pelo menos 6 caracteres';
       isValid = false;
     }
 
     if (password !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = 'As senhas não correspondem';
       isValid = false;
     }
 
@@ -59,7 +59,7 @@ const RegisterForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -72,13 +72,13 @@ const RegisterForm: React.FC = () => {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: '20px' }}>Register</h2>
-      
+      <h2 style={{ marginBottom: '20px' }}>Registre-se</h2>
+
       {error && <div className="alert alert-error">{error}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="username">Username</label>
+          <label htmlFor="username">Nome de Usuário</label>
           <input
             type="text"
             id="username"
@@ -88,7 +88,7 @@ const RegisterForm: React.FC = () => {
           />
           {formErrors.username && <div className="error-message">{formErrors.username}</div>}
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input
@@ -100,9 +100,9 @@ const RegisterForm: React.FC = () => {
           />
           {formErrors.email && <div className="error-message">{formErrors.email}</div>}
         </div>
-        
+
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Senha</label>
           <input
             type="password"
             id="password"
@@ -112,9 +112,9 @@ const RegisterForm: React.FC = () => {
           />
           {formErrors.password && <div className="error-message">{formErrors.password}</div>}
         </div>
-        
+
         <div className="form-group">
-          <label htmlFor="confirmPassword">Confirm Password</label>
+          <label htmlFor="confirmPassword">Confirme a sua senha</label>
           <input
             type="password"
             id="confirmPassword"
@@ -126,13 +126,13 @@ const RegisterForm: React.FC = () => {
             <div className="error-message">{formErrors.confirmPassword}</div>
           )}
         </div>
-        
+
         <div className="form-group">
           <button type="submit" className="btn btn-primary">Register</button>
         </div>
-        
+
         <div>
-          Already have an account? <Link to="/login">Login</Link>
+          Já possui uma conta? <Link to="/login">Login</Link>
         </div>
       </form>
     </div>

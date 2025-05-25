@@ -12,7 +12,7 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Create Account</h1>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Crie sua conta</h1>
       <RegisterForm />
     </div>
   );

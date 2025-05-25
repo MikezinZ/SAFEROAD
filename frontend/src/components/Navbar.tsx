@@ -8,21 +8,21 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="container">
-        <Link to="/" className="navbar-brand">MyApp</Link>
-        
+        <Link to="/" className="navbar-brand">SAFEROAD</Link>
+
         <ul className="navbar-nav">
           {isLoggedIn ? (
             <>
               <li>
-                <Link to="/home" className="nav-link">Home</Link>
+                <Link to="/home" className="nav-link">Início</Link>
               </li>
               <li>
-                <button 
-                  onClick={logout} 
-                  className="btn btn-secondary" 
+                <button
+                  onClick={logout}
+                  className="btn btn-secondary"
                   style={{ marginLeft: '10px' }}
                 >
-                  Logout
+                  Sair
                 </button>
               </li>
             </>
@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
                 <Link to="/login" className="nav-link">Login</Link>
               </li>
               <li>
-                <Link to="/register" className="nav-link">Register</Link>
+                <Link to="/register" className="nav-link">Registre-se</Link>
               </li>
             </>
           )}

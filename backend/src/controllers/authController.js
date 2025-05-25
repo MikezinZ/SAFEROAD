@@ -26,7 +26,14 @@ class AuthController {
                 { expiresIn: "24h" }
             );
 
-            res.json({ token });
+            res.json({
+                token,
+                user: {
+                    id: user.id,
+                    nome: user.nome, // Note que o campo é 'nome'
+                    email: user.email
+                }
+            });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

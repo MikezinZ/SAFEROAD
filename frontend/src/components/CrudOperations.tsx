@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { getItems, createItem, updateItem, deleteItem } from '../services/api';
+import { getUsers, createUser, updateUser, deleteUser } from '../services/api';
 
-interface Item {
+interface User {
   id: string;
-  name: string;
-  description: string;
+  nome: string;
+  email: string;
   [key: string]: any;
 }
 
 const CrudOperations: React.FC = () => {
-  const [items, setItems] = useState<Item[]>([]);
-  const [currentItem, setCurrentItem] = useState<Partial<Item>>({ name: '', description: '' });
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<Partial<User>>({ name: '', email: '' });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,31 +18,31 @@ const CrudOperations: React.FC = () => {
 
   // Load items on component mount
   useEffect(() => {
-    fetchItems();
+    fetchUsers();
   }, []);
 
-  const fetchItems = async () => {
+  const fetchUsers = async () => {
     setLoading(true);
     setError(null);
-    
-    const response = await getItems<Item>();
-    
+
+    const response = await getUsers<User>();
+
     if (response.error) {
       setError(response.error);
     } else if (response.data) {
-      setItems(response.data);
+      setUsers(response.data);
     }
-    
+
     setLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setCurrentItem({ ...currentItem, [name]: value });
+    setCurrentUser({ ...currentUser, [name]: value });
   };
 
   const resetForm = () => {
-    setCurrentItem({ name: '', description: '' });
+    setCurrentUser({ name: '', description: '' });
     setIsEditing(false);
   };
 
@@ -55,113 +55,114 @@ const CrudOperations: React.FC = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
-    if (!currentItem.name) {
-      setError('Name is required');
+
+    if (!currentUser.nome || !currentUser.email) {
+      setError('Nome e Email são obrigatórios');
       setLoading(false);
       return;
     }
 
     let response;
-    
-    if (isEditing && currentItem.id) {
-      response = await updateItem<Item>(currentItem.id, currentItem);
-      
+
+    if (isEditing && currentUser.id) {
+      response = await updateUser<User>(currentUser.id, currentUser);
+
       if (!response.error) {
-        setItems(items.map(item => 
-          item.id === currentItem.id ? { ...item, ...currentItem } : item
+        setUsers(users.map(user =>
+          user.id === currentUser.id ? { ...user, ...currentUser } : user
         ));
-        showSuccessMessage('Item updated successfully!');
+        showSuccessMessage('Usuário atualizado com sucesso!');
       }
     } else {
-      response = await createItem<Item>(currentItem);
-      
+      const dataToCreate = { ...currentUser, senha: 'password123' };
+      response = await createUser<User>(currentUser);
+
       if (!response.error && response.data) {
-        setItems([...items, response.data]);
-        showSuccessMessage('Item created successfully!');
+        setUsers([...users, response.data]);
+        showSuccessMessage('Usuário criado com sucesso!');
       }
     }
-    
+
     if (response.error) {
       setError(response.error);
     } else {
       resetForm();
     }
-    
+
     setLoading(false);
   };
 
-  const handleEdit = (item: Item) => {
-    setCurrentItem(item);
+  const handleEdit = (user: User) => {
+    setCurrentUser(user);
     setIsEditing(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) {
+    if (!window.confirm('Tem certeza que deseja deletar este usuário?')) {
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
-    const response = await deleteItem(id);
-    
+
+    const response = await deleteUser(id);
+
     if (response.error) {
       setError(response.error);
     } else {
-      setItems(items.filter(item => item.id !== id));
-      showSuccessMessage('Item deleted successfully!');
+      setUsers(users.filter(user => user.id !== id));
+      showSuccessMessage('Usuário deletado com sucesso!');
     }
-    
+
     setLoading(false);
   };
 
   return (
     <div className="card">
       <h2 style={{ marginBottom: '20px' }}>
-        {isEditing ? 'Edit Item' : 'Create New Item'}
+        {isEditing ? 'Editar Usuário' : 'Criar Novo Usuário'}
       </h2>
-      
+
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="name">Name</label>
+          <label htmlFor="nome">Nome</label>
           <input
             type="text"
-            id="name"
-            name="name"
+            id="nome"
+            name="nome"
             className="form-control"
-            value={currentItem.name || ''}
+            value={currentUser.name || ''}
             onChange={handleInputChange}
           />
         </div>
-        
+
         <div className="form-group">
-          <label htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            name="description"
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
             className="form-control"
-            value={currentItem.description || ''}
+            value={currentUser.email || ''}
             onChange={handleInputChange}
-            rows={3}
           />
         </div>
-        
+
         <div className="form-group" style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
             disabled={loading}
           >
             {loading ? 'Processing...' : isEditing ? 'Update' : 'Create'}
           </button>
-          
+
           {isEditing && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-secondary"
               onClick={resetForm}
             >
@@ -170,39 +171,39 @@ const CrudOperations: React.FC = () => {
           )}
         </div>
       </form>
-      
-      <h2 style={{ margin: '30px 0 20px' }}>Items List</h2>
-      
-      {loading && <p>Loading...</p>}
-      
-      {items.length === 0 && !loading ? (
-        <p>No items found. Create one above!</p>
+
+      <h2 style={{ margin: '30px 0 20px' }}>Lista de Usuários</h2>
+
+      {loading && <p>Carregando...</p>}
+
+      {users.length === 0 && !loading ? (
+        <p>Nenhum usuário encontrado!</p>
       ) : (
         <table className="table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Actions</th>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            {items.map(item => (
-              <tr key={item.id}>
-                <td>{item.name}</td>
-                <td>{item.description}</td>
+            {users.map(user => (
+              <tr key={user.id}>
+                <td>{user.nome}</td>
+                <td>{user.email}</td>
                 <td className="action-buttons">
-                  <button 
-                    onClick={() => handleEdit(item)} 
+                  <button
+                    onClick={() => handleEdit(user)}
                     className="btn btn-secondary"
                   >
-                    Edit
+                    Editar
                   </button>
-                  <button 
-                    onClick={() => handleDelete(item.id)} 
+                  <button
+                    onClick={() => handleDelete(user.id)}
                     className="btn btn-danger"
                   >
-                    Delete
+                    Deletar
                   </button>
                 </td>
               </tr>

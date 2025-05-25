@@ -53,23 +53,29 @@ export const login = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, senha: password }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return { success: false, error: data.message || 'Login failed' };
+      return { success: false, error: data.message || 'Falha no Login' };
     }
 
     // Store auth data
     setToken(data.token);
-    setUser(data.user);
+    const userData = {
+      id: data.user.id,
+      username: data.user.nome, // Convertendo 'nome' para 'username'
+      email: data.user.email,
+    };
+    setUser(userData);
+
 
     return { success: true };
   } catch (error) {
-    console.error('Login failed:', error);
-    return { success: false, error: 'Network error. Please try again.' };
+    console.error('Falha no Login: ', error);
+    return { success: false, error: 'Erro de rede. Tente novamente.' };
   }
 };
 
@@ -84,19 +90,19 @@ export const register = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify({ nome: username, email, senha: password }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return { success: false, error: data.message || 'Registration failed' };
+      return { success: false, error: data.message || 'O registro falhou' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Registration failed:', error);
-    return { success: false, error: 'Network error. Please try again.' };
+    console.error('O registro falhou:', error);
+    return { success: false, error: 'Erro de rede. Tente novamente.' };
   }
 };
 

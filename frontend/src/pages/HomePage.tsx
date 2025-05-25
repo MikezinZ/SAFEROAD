@@ -13,10 +13,10 @@ const HomePage: React.FC = () => {
   return (
     <div className="container" style={{ margin: '40px auto' }}>
       <div style={{ marginBottom: '30px' }}>
-        <h1>Welcome, {user?.username}!</h1>
-        <p>This is your dashboard where you can manage your items.</p>
+        <h1>Bem Vindo, {user?.username}!</h1>
+        <p>Este é o seu painel onde você pode gerenciar seus itens.</p>
       </div>
-      
+
       <CrudOperations />
     </div>
   );

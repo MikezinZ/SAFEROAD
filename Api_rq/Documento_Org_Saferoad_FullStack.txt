@@ -1,0 +1,2000 @@
+SAFEROAD
+ │ backend/ (pendente)
+ │ ├── node_modules/ [✓]
+ │ ├── src/ [✓]
+ │ │   ├── config/ [✓]
+ │ │   │   └── databases.js [✓]
+ │ │   ├── controllers/ [✓]
+ │ │   │   ├── authController/ [✓]
+ │ │   │   └── userController/ [✓]
+ │ │   ├── middleware/ [✓]
+ │ │   │   └── auth.js [✓]
+ │ │   ├── models/ [✓]
+ │ │   │   ├── index.js [✓]
+ │ │   │   └── users.js [✓]
+ │ │   ├── routes/ [✓]
+ │ │   │   ├── authRouter.js [✓]
+ │ │   │   └── userRouter.js [✓]
+ │ │   └── tests/ [✓]
+ │ │       ├── auth.tests.js [✓]
+ │ │       └── index.js [✓]
+ │ ├── env/ [✓]
+ │ │   └── databases.sqlite [✓]
+ │ ├── package-lock.json [✓]
+ │ └── package.json [✓]
+ ├── frontend/
+ ├── .gitattributes [✓]
+ ├── project.txt [✓]
+ └── README.md [✓]
+
+ESTRUTURA DE CÓDIGO COMPLETA DE TODO BACKEND;
+
+-------------------
+
+backend/src/index.js:
+// importaçãoa de módulos
+const express = require('express');
+const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsDoc = require('swagger-jsdoc');
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
+const { sequelize } = require('./models');
+
+// Inicialização do express e configuração do servidor
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware para permitir requisições de diferentes origens
+app.use(cors());
+app.use(express.json());
+
+// configuração do swagger
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'User Management API',
+            version: '1.0.0',
+            description: 'API for user management and authentication',
+        },
+        servers: [
+            {
+                url: `http://localhost:${PORT}`,
+            },
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            }
+        }
+    },
+    apis: ['./src/routes/*.js'], // Caminho para os arquivos com as anotações Swagger
+};
+
+// Middleware para tratar erros do Swagger
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: "Bad request - invalid JSON" });
+    }
+    next();
+});
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Rotas 
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+
+// tratamento de erro global
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Algo deu errado!');
+});
+
+// enedpoint de saúde
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK' });
+});
+
+// sincronização do banco de dados e inicialização do servidor
+sequelize.sync()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`🔥 Servidor rodando na porta ${PORT}`);
+            console.log(`📄 Documentação: http://localhost:${PORT}/api-docs`);
+        });
+    })
+    .catch(err => {
+        console.error('Falha ao sincronizar com o banco de dados:', err);
+    });
+
+module.exports = app; 
+
+---------
+
+backend/src/config/database.js:
+const { Sequelize } = require('sequelize');
+const path = require('path');
+
+const sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: path.join(__dirname, '../../database.sqlite'),
+    logging: false
+});
+
+module.exports = sequelize;
+
+backend/src/controllers/authController.sj:
+const jwt = require("jsonwebtoken");
+const { User } = require('../models');
+
+const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta"; // Substitua pela sua chave secreta real
+
+
+// Controller de autenticação
+// Este controller gerencia o login e o registro de usuários
+class AuthController {
+    async login(req, res) {
+        // Método para autenticar um usuário    
+        try {
+            const { email, senha } = req.body;
+            const user = await User.findOne({ where: { email } });
+            if (!user) {
+                return res.status(401).json({ message: "Credenciais inválidas" });
+            }
+
+            const isValidPassword = await user.validatePassword(senha);
+            if (!isValidPassword) {
+                return res.status(401).json({ message: "Credenciais inválidas" });
+            }
+            const token = jwt.sign(
+                { id: user.id, email: user.email },
+                JWT_SECRET,
+                { expiresIn: "24h" }
+            );
+
+            res.json({ token });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Método para registrar um novo usuário
+    async register(req, res) {
+        try {
+            const user = await User.create(req.body);
+            const token = jwt.sign(
+                { id: user.id, email: user.email },
+                JWT_SECRET,
+                { expiresIn: "24h" }
+            );
+
+            res.status(201).json({
+                token,
+                user: {
+                    id: user.id,
+                    username: user.nome,
+                    email: user.email
+                }
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = new AuthController();
+
+-----------
+
+backend/src/controller/userController.js:
+
+const { User } = require('../models');
+
+
+// a classe contém os métodos responsáveis por manipular e responder às requisições HTTP relacionadas a usuários.
+class UserController {
+
+    // Retorna todos os usuários da base de dados.
+    async getAllUsers(req, res) { // 
+        try {
+            const users = await User.findAll({
+                attributes: ['id', 'nome', 'email']
+            });
+            res.json(users);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+
+    //  Recupera um usuário específico pelo ID.
+    async getUserById(req, res) {
+        try {
+            const user = await User.findByPk(req.params.id, {
+                attributes: ['id', 'nome', 'email']
+            });
+            if (!user) {
+                return res.status(404).json({ message: 'Usuario não encontrado' });
+            }
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    // Cria um novo usuário
+    async createUser(req, res) {
+        try {
+            const user = await User.create(req.body);
+            res.status(201).json({
+                id: user.id,
+                nome: user.nome,
+                email: user.email
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
+    // Atualiza os dados de um usuário específico.
+    async updateUser(req, res) {
+        try {
+            const user = await User.findByPk(req.params.id);
+            if (!user) {
+                return res.status(404).json({ message: 'Usuario não encontrado' });
+            }
+            await user.update(req.body);
+            res.json({
+                id: user.id,
+                nome: user.nome,
+                email: user.email
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    //Deleta um usuário específico.
+    async deleteUser(req, res) {
+        try {
+            const user = await User.findByPk(req.params.id);
+            if (!user) {
+                return res.status(404).json({ message: 'Usuario não encontrado' });
+            }
+            await user.destroy();
+            res.status(204).send();
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = new UserController();
+
+--------------
+
+backend/src/middleware/auth.js:
+
+const jwt = require('jsonwebtoken'); // Importa o módulo jsonwebtoken
+
+const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta'; // Define a chave secreta para assinar os tokens JWT. Em produção, use uma variável de ambiente.
+
+
+// Middleware de autenticação
+// Verifica se o token JWT é válido e adiciona os dados do usuário à requisição
+const authMiddleware = (req, res, next) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+        return res.status(401).json({ message: 'Autenticação necessária' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(401).json({ message: 'Token inválido' });
+    }
+};
+
+module.exports = authMiddleware;
+
+-------------
+
+backend/src/models/index.js:
+
+const sequelize = require('../config/database');
+const User = require('./user');
+
+module.exports = {
+    sequelize,
+    User
+};
+
+-------------
+
+backend/src/models/user.js:
+
+
+// importação do sequelize e bcryptjs
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const bcrypt = require('bcryptjs');
+
+// Define um modelo de usuário com os campos id, nome, email e senha
+const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    nome: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+            isEmail: true,
+        },
+    },
+    senha: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+
+},
+    // o bloco de baixo é um hook do sequelize que executa antes de criar um usuário
+    {
+        hooks: {
+            beforeCreate: async (user) => {
+                if (user.senha) {
+                    const salt = await bcrypt.genSalt(10);
+                    user.senha = await bcrypt.hash(user.senha, salt);
+                }
+            }
+        }
+
+    }
+);
+
+// Define um método para verificar se a senha fornecida corresponde à senha armazenada no banco de dados
+// O método usa bcrypt para comparar a senha fornecida com a senha armazenada
+User.prototype.validatePassword = async function (senha) {
+    return await bcrypt.compare(senha, this.senha);
+}
+
+module.exports = User;
+
+-----------------
+
+backend/src/routes/authRoutes.js:
+
+const express = require('express');
+const authController = require('../controllers/authController');
+const { body } = require('express-validator');
+
+const router = express.Router();
+
+
+// Swagger sem funcionar (quebrando código)
+
+// Define as rotas da API de autenticação
+/**
+ * 
+ * tags:
+ *   name: Auth
+ *   description: Autenticação de usuários
+ */
+
+/**
+ *
+ * /api/auth/login:
+ *   post:
+ *     summary: Login do usuário
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               senha:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login bem sucedido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ */
+
+router.post('/login',
+    [
+        body('email').isEmail(),
+        body('senha').exists()
+    ],
+    authController.login
+);
+
+
+/**
+ * 
+ * /api/auth/register:
+ *   post:
+ *     summary: Registrar novo usuário
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               senha:
+ *                 type: string
+ *             required:
+ *               - nome
+ *               - email
+ *               - senha
+ *     responses:
+ *       201:
+ *         description: Usuário registrado com sucesso
+ *       400:
+ *         description: Dados inválidos
+ */
+
+// Define a rota para registrar um novo usuário
+router.post('/register',
+    [
+        body('nome').notEmpty(),
+        body('email').isEmail(),
+        body('senha').isLength({ min: 6 })
+    ],
+    authController.register
+);
+
+module.exports = router;
+
+---------------
+
+backend/src/routes/userRoutes.js:
+
+const express = require('express');
+const userController = require('../controllers/userController');
+const { body } = require('express-validator');
+const authMiddleware = require('../middleware/auth');
+
+const router = express.Router(); // Cria uma instância do roteador
+
+
+// Define as rotas da API de usuários
+/**
+
+ * /api/users:
+ *   get:
+ *     summary: Obter todos os usuários
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de usuários
+ */
+
+router.get('/', authMiddleware, userController.getAllUsers);
+
+
+/**
+
+ * /api/users/{id}:
+ *   get:
+ *   summary: Obter usuário por ID
+ *   tags: [Users]
+ *   security:
+ *    - bearerAuth: []
+ *  parameters:
+ *    - in: path
+ *     name: id
+ *     required: true
+ *     schema:
+ *      type: integer
+ *  responses:
+ *     200:
+ *      description: Detalhes do usuário
+ */
+router.get('/:id', authMiddleware, userController.getUserById);
+
+/**
+
+ * /api/users:
+ *  post:
+ *    summary: Criar um novo usuário
+ *    tags: [Users]
+ *    security:
+ *     - bearerAuth: []
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *                nome:
+ *                  type: string
+ *                email:
+ *                  type: string
+ *                senha:
+ *                  type: string
+ *     responses:
+ *         201:
+ *           description: Usuário criado com sucesso
+ */
+// Define a rota para criar um novo usuário
+// O middleware de autenticação é aplicado a esta rota
+router.post('/',
+    [
+        body('nome').notEmpty(),
+        body('email').isEmail(),
+        body('senha').isLength({ min: 6 })
+    ],
+    userController.createUser
+);
+
+/**
+
+ * /api/users/{id}:
+ *   put:
+ *     summary: Atualizar usuário por ID
+ *     tags: [Users]
+ *     security:
+ *      - bearerAuth: []
+ *    parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: integer
+ *    requestBody:
+ *     required: true
+ *     content:
+ *       application/json:
+ *         schema:
+ *          type: object
+ *         properties:
+ *          nome:
+ *           type: string
+ *          email:
+ *           type: string
+ *    responses:
+ *      200:
+ * *       description: Usuário atualizado com sucesso
+ */
+router.put('/:id', authMiddleware, userController.updateUser);
+
+/**
+
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Deletar usuário por ID
+ *     tags: [Users]
+ *     security:
+ *        - bearerAuth: []
+ *    parameters:
+ *     - in: path
+ *       name: id
+ *      required: true
+ *      schema:
+ *       type: integer
+ *    responses:
+ *     204:
+ *     description: Usuário deletado com sucesso
+ */
+router.delete('/:id', authMiddleware, userController.deleteUser);
+
+module.exports = router;
+
+---------------
+
+backend/src/tests/auth.test.js:
+
+const request = require('supertest');
+const app = require('../index');
+const { User } = require('../models');
+
+describe('Endpoints de Autenticacao', () => {
+    beforeEach(async () => {
+        await User.destroy({ where: {} });
+    });
+
+    describe('POST /api/auth/register', () => {
+        it('deve criar um novo usuário', async () => {
+            const res = await request(app)
+                .post('/api/auth/register')
+                .send({
+                    nome: 'testuser',
+                    email: 'test@test.com',
+                    senha: 'password123'
+                });
+
+            expect(res.statusCode).toEqual(201);
+            expect(res.body).toHaveProperty('token');
+            expect(res.body.user).toHaveProperty('id');
+        });
+    });
+
+    describe('POST /api/auth/login', () => {
+        beforeEach(async () => {
+            await request(app)
+                .post('/api/auth/register')
+                .send({
+                    nome: 'testuser',
+                    email: 'test@test.com',
+                    senha: 'password123'
+                });
+        });
+
+        it('deve fazer login no usuário existente', async () => {
+            const res = await request(app)
+                .post('/api/auth/login')
+                .send({
+                    email: 'test@test.com',
+                    senha: 'password123'
+                });
+
+            expect(res.statusCode).toEqual(200);
+            expect(res.body).toHaveProperty('token');
+        });
+    });
+});
+
+
+---------------
+
+backend/.env:
+
+JWT_SECRET=SafeCode_Code
+PORT=3000
+
+-------------------
+
+backend/package.json:
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@fastify/swagger": "^9.4.2",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "sequelize": "^6.37.6",
+    "sqlite3": "^5.1.7",
+    "swagger-jsdoc": "^6.0.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9"
+  }
+}
+
+---------------------------
+
+SAFEROAD
+ │ Frontend (pendente)
+ │ ├── node_modules/ [✓]
+ │ ├── src/ [✓]
+ │ │   ├── components/ [✓]
+ │ │   │   ├──  CrudOperations.tsx [✓]
+ │ │   │   ├──  LoginForm.tsx [✓]
+ │ │   │   ├──  NavBar.tsx [✓]
+ │ │   │   └──  RegisterForm.tsx [✓]
+ │ │   ├── contexts/ [✓]
+ │ │   │   └── AuthContext.tsx/ [✓]
+ │ │   ├── pages/ [✓]
+ │ │   │   ├──  HomePage.tsx [✓]
+ │ │   │   ├──  LandingPage.tsx [✓]
+ │ │   │   ├──  LoginPage.tsx [✓]
+ │ │   │   └──  RegisterPage.tsx [✓]
+ │ │   ├── services/ [✓]
+ │ │   │   ├── api.ts [✓]
+ │ │   │   └── auth.js [✓]
+ │ │   ├── App.tsx [✓]
+ │ │   ├── Index.css
+ │ │   ├── main.tsx
+ │ │   └── vite-env.d.ts
+ │ ├── .gitignore [✓]
+ │ ├── eslint.config.js [✓]
+ │ ├── index.html [✓]
+ │ ├── postcss.config.js [✓]
+ │ ├── tailwind.config.js [✓]
+ │ ├── tsconfig.app.json [✓]
+ │ ├── tsconfig.json [✓]
+ │ ├── tsconfig.node.json [✓]
+ │ ├── package-lock.json [✓]
+ │ └── package.json [✓]
+ ├── backend/
+ ├── .gitattributes [✓]
+ ├── project.txt [✓]
+ └── README.md [✓]
+
+ESTRUTURA DE CÓDIGO COMPLETA DE TODO FRONTEND;
+
+---------------------------
+
+frontend/src/components/CrudOperations.tsx:
+
+
+import React, { useState, useEffect } from 'react';
+import { getItems, createItem, updateItem, deleteItem } from '../services/api';
+
+interface Item {
+  id: string;
+  name: string;
+  description: string;
+  [key: string]: any;
+}
+
+const CrudOperations: React.FC = () => {
+  const [items, setItems] = useState<Item[]>([]);
+  const [currentItem, setCurrentItem] = useState<Partial<Item>>({ name: '', description: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Load items on component mount
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const response = await getItems<Item>();
+    
+    if (response.error) {
+      setError(response.error);
+    } else if (response.data) {
+      setItems(response.data);
+    }
+    
+    setLoading(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCurrentItem({ ...currentItem, [name]: value });
+  };
+
+  const resetForm = () => {
+    setCurrentItem({ name: '', description: '' });
+    setIsEditing(false);
+  };
+
+  const showSuccessMessage = (message: string) => {
+    setSuccess(message);
+    setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    
+    if (!currentItem.name) {
+      setError('Name is required');
+      setLoading(false);
+      return;
+    }
+
+    let response;
+    
+    if (isEditing && currentItem.id) {
+      response = await updateItem<Item>(currentItem.id, currentItem);
+      
+      if (!response.error) {
+        setItems(items.map(item => 
+          item.id === currentItem.id ? { ...item, ...currentItem } : item
+        ));
+        showSuccessMessage('Item updated successfully!');
+      }
+    } else {
+      response = await createItem<Item>(currentItem);
+      
+      if (!response.error && response.data) {
+        setItems([...items, response.data]);
+        showSuccessMessage('Item created successfully!');
+      }
+    }
+    
+    if (response.error) {
+      setError(response.error);
+    } else {
+      resetForm();
+    }
+    
+    setLoading(false);
+  };
+
+  const handleEdit = (item: Item) => {
+    setCurrentItem(item);
+    setIsEditing(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    const response = await deleteItem(id);
+    
+    if (response.error) {
+      setError(response.error);
+    } else {
+      setItems(items.filter(item => item.id !== id));
+      showSuccessMessage('Item deleted successfully!');
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <div className="card">
+      <h2 style={{ marginBottom: '20px' }}>
+        {isEditing ? 'Edit Item' : 'Create New Item'}
+      </h2>
+      
+      {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="name">Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            className="form-control"
+            value={currentItem.name || ''}
+            onChange={handleInputChange}
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="description">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            className="form-control"
+            value={currentItem.description || ''}
+            onChange={handleInputChange}
+            rows={3}
+          />
+        </div>
+        
+        <div className="form-group" style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            type="submit" 
+            className="btn btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Processing...' : isEditing ? 'Update' : 'Create'}
+          </button>
+          
+          {isEditing && (
+            <button 
+              type="button" 
+              className="btn btn-secondary"
+              onClick={resetForm}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+      
+      <h2 style={{ margin: '30px 0 20px' }}>Items List</h2>
+      
+      {loading && <p>Loading...</p>}
+      
+      {items.length === 0 && !loading ? (
+        <p>No items found. Create one above!</p>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map(item => (
+              <tr key={item.id}>
+                <td>{item.name}</td>
+                <td>{item.description}</td>
+                <td className="action-buttons">
+                  <button 
+                    onClick={() => handleEdit(item)} 
+                    className="btn btn-secondary"
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(item.id)} 
+                    className="btn btn-danger"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};
+
+export default CrudOperations;
+
+------------------------
+
+frontend/src/components/LoginForm.tsx;
+
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+
+const LoginForm: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+  
+  const { login, error, clearError } = useAuth();
+  const navigate = useNavigate();
+
+  const validateForm = (): boolean => {
+    const errors: { email?: string; password?: string } = {};
+    let isValid = true;
+
+    if (!email) {
+      errors.email = 'Email is required';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email is invalid';
+      isValid = false;
+    }
+
+    if (!password) {
+      errors.password = 'Password is required';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    const success = await login(email, password);
+    if (success) {
+      navigate('/home');
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2 style={{ marginBottom: '20px' }}>Login</h2>
+      
+      {error && <div className="alert alert-error">{error}</div>}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            className="form-control"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {formErrors.email && <div className="error-message">{formErrors.email}</div>}
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            className="form-control"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {formErrors.password && <div className="error-message">{formErrors.password}</div>}
+        </div>
+        
+        <div className="form-group">
+          <button type="submit" className="btn btn-primary">Login</button>
+        </div>
+        
+        <div>
+          Don't have an account? <Link to="/register">Register</Link>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default LoginForm;
+
+-----------------------------------
+
+frontend/src/components/NavBar.tsx:
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const Navbar: React.FC = () => {
+  const { isLoggedIn, logout } = useAuth();
+
+  return (
+    <nav className="navbar">
+      <div className="container">
+        <Link to="/" className="navbar-brand">MyApp</Link>
+        
+        <ul className="navbar-nav">
+          {isLoggedIn ? (
+            <>
+              <li>
+                <Link to="/home" className="nav-link">Home</Link>
+              </li>
+              <li>
+                <button 
+                  onClick={logout} 
+                  className="btn btn-secondary" 
+                  style={{ marginLeft: '10px' }}
+                >
+                  Logout
+                </button>
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <Link to="/login" className="nav-link">Login</Link>
+              </li>
+              <li>
+                <Link to="/register" className="nav-link">Register</Link>
+              </li>
+            </>
+          )}
+        </ul>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+
+-----------------------
+
+frontend/src/components/RegisterForm.tsx:
+
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+
+const RegisterForm: React.FC = () => {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formErrors, setFormErrors] = useState<{
+    username?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  
+  const { register, error, clearError } = useAuth();
+  const navigate = useNavigate();
+
+  const validateForm = (): boolean => {
+    const errors: {
+      username?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
+    let isValid = true;
+
+    if (!username) {
+      errors.username = 'Username is required';
+      isValid = false;
+    }
+
+    if (!email) {
+      errors.email = 'Email is required';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email is invalid';
+      isValid = false;
+    }
+
+    if (!password) {
+      errors.password = 'Password is required';
+      isValid = false;
+    } else if (password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+      isValid = false;
+    }
+
+    if (password !== confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    const success = await register(username, email, password);
+    if (success) {
+      navigate('/login');
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2 style={{ marginBottom: '20px' }}>Register</h2>
+      
+      {error && <div className="alert alert-error">{error}</div>}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            className="form-control"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          {formErrors.username && <div className="error-message">{formErrors.username}</div>}
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            className="form-control"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {formErrors.email && <div className="error-message">{formErrors.email}</div>}
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            className="form-control"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {formErrors.password && <div className="error-message">{formErrors.password}</div>}
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="confirmPassword">Confirm Password</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            className="form-control"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          {formErrors.confirmPassword && (
+            <div className="error-message">{formErrors.confirmPassword}</div>
+          )}
+        </div>
+        
+        <div className="form-group">
+          <button type="submit" className="btn btn-primary">Register</button>
+        </div>
+        
+        <div>
+          Already have an account? <Link to="/login">Login</Link>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default RegisterForm;
+
+------------------------------
+
+frontend/src/contexts/AuthContext.tsx:
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getUser, isAuthenticated, login, logout, register } from '../services/auth';
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  isLoggedIn: boolean;
+  loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  clearError: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize auth state
+  useEffect(() => {
+    const initAuth = () => {
+      if (isAuthenticated()) {
+        const userData = getUser();
+        setUser(userData);
+      }
+      setLoading(false);
+    };
+
+    initAuth();
+  }, []);
+
+  const handleLogin = async (email: string, password: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    const result = await login(email, password);
+    
+    if (!result.success) {
+      setError(result.error || 'Login failed');
+      setLoading(false);
+      return false;
+    }
+
+    setUser(getUser());
+    setLoading(false);
+    return true;
+  };
+
+  const handleRegister = async (
+    username: string,
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    const result = await register(username, email, password);
+    
+    if (!result.success) {
+      setError(result.error || 'Registration failed');
+      setLoading(false);
+      return false;
+    }
+
+    setLoading(false);
+    return true;
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUser(null);
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
+
+  const value = {
+    user,
+    isLoggedIn: !!user,
+    loading,
+    error,
+    login: handleLogin,
+    register: handleRegister,
+    logout: handleLogout,
+    clearError,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+-----------------------
+
+frontend/src/pages/HomePage.tsx:
+
+import React from 'react';
+import CrudOperations from '../components/CrudOperations';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const HomePage: React.FC = () => {
+  const { isLoggedIn, user } = useAuth();
+
+  if (!isLoggedIn) {
+    return <Navigate to="/login" />;
+  }
+
+  return (
+    <div className="container" style={{ margin: '40px auto' }}>
+      <div style={{ marginBottom: '30px' }}>
+        <h1>Welcome, {user?.username}!</h1>
+        <p>This is your dashboard where you can manage your items.</p>
+      </div>
+      
+      <CrudOperations />
+    </div>
+  );
+};
+
+export default HomePage;
+
+---------------------------
+
+frontend/src/pages/LandingPage.tsx:
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const LandingPage: React.FC = () => {
+  const { isLoggedIn } = useAuth();
+
+  return (
+    <div className="container">
+      <div style={{ 
+        textAlign: 'center', 
+        maxWidth: '800px', 
+        margin: '80px auto',
+        padding: '0 20px'
+      }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '20px' }}>
+          Simple React Application
+        </h1>
+        <p style={{ fontSize: '1.2rem', marginBottom: '40px', color: '#555' }}>
+          A basic frontend with authentication and CRUD operations to connect with your Express backend.
+        </p>
+        
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          {isLoggedIn ? (
+            <Link to="/home" className="btn btn-primary">
+              Go to Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="btn btn-primary">
+                Login
+              </Link>
+              <Link to="/register" className="btn btn-secondary">
+                Register
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LandingPage;
+
+------------------------
+
+frontend/src/pages/LoginPage.tsx:
+
+import React from 'react';
+import LoginForm from '../components/LoginForm';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const LoginPage: React.FC = () => {
+  const { isLoggedIn } = useAuth();
+
+  if (isLoggedIn) {
+    return <Navigate to="/home" />;
+  }
+
+  return (
+    <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Welcome Back</h1>
+      <LoginForm />
+    </div>
+  );
+};
+
+export default LoginPage;
+
+---------------------
+
+frontend/src/pages/RegisterPage.tsx:
+
+import React from 'react';
+import RegisterForm from '../components/RegisterForm';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const RegisterPage: React.FC = () => {
+  const { isLoggedIn } = useAuth();
+
+  if (isLoggedIn) {
+    return <Navigate to="/home" />;
+  }
+
+  return (
+    <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Create Account</h1>
+      <RegisterForm />
+    </div>
+  );
+};
+
+export default RegisterPage;
+
+------------------------------
+
+frontend/src/services/api.ts:
+
+import { getToken } from './auth';
+
+const API_URL = 'http://localhost:3000/api'; // Change this to your backend URL
+
+interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+}
+
+export async function apiRequest<T>(
+  endpoint: string,
+  method: string = 'GET',
+  data?: any
+): Promise<ApiResponse<T>> {
+  const token = getToken();
+  
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      ...(data ? { body: JSON.stringify(data) } : {})
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      return { error: responseData.message || 'Something went wrong' };
+    }
+
+    return { data: responseData };
+  } catch (error) {
+    console.error('API request failed:', error);
+    return { error: 'Network error. Please try again.' };
+  }
+}
+
+// Common CRUD operations
+
+export async function getItems<T>(): Promise<ApiResponse<T[]>> {
+  return apiRequest<T[]>('/items');
+}
+
+export async function getItem<T>(id: string): Promise<ApiResponse<T>> {
+  return apiRequest<T>(`/items/${id}`);
+}
+
+export async function createItem<T>(data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>('/items', 'POST', data);
+}
+
+export async function updateItem<T>(id: string, data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>(`/items/${id}`, 'PUT', data);
+}
+
+export async function deleteItem(id: string): Promise<ApiResponse<{ success: boolean }>> {
+  return apiRequest<{ success: boolean }>(`/items/${id}`, 'DELETE');
+}
+
+---------------------
+
+frontend/src/services/auth.ts
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}
+
+interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+// Token management
+export const getToken = (): string | null => {
+  return localStorage.getItem('auth_token');
+};
+
+export const setToken = (token: string): void => {
+  localStorage.setItem('auth_token', token);
+};
+
+export const removeToken = (): void => {
+  localStorage.removeItem('auth_token');
+};
+
+// User management
+export const getUser = (): User | null => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch (error) {
+    console.error('Failed to parse user data', error);
+    return null;
+  }
+};
+
+export const setUser = (user: User): void => {
+  localStorage.setItem('user', JSON.stringify(user));
+};
+
+export const removeUser = (): void => {
+  localStorage.removeItem('user');
+};
+
+// Auth operations
+export const login = async (
+  email: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.message || 'Login failed' };
+    }
+
+    // Store auth data
+    setToken(data.token);
+    setUser(data.user);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Login failed:', error);
+    return { success: false, error: 'Network error. Please try again.' };
+  }
+};
+
+export const register = async (
+  username: string,
+  email: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const response = await fetch('http://localhost:3000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.message || 'Registration failed' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Registration failed:', error);
+    return { success: false, error: 'Network error. Please try again.' };
+  }
+};
+
+export const logout = (): void => {
+  removeToken();
+  removeUser();
+};
+
+export const isAuthenticated = (): boolean => {
+  return !!getToken();
+};
+
+
+----------------------------
+
+frontend/src/App.tsx:
+
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import Navbar from './components/Navbar';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import HomePage from './pages/HomePage';
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;
+
+------------------
+
+frontend/src/index.css:
+
+/* Basic CSS reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.card {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: #4285f4;
+  outline: none;
+}
+
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background-color: #4285f4;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #3367d6;
+}
+
+.btn-danger {
+  background-color: #ea4335;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #d33426;
+}
+
+.btn-secondary {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e5e5;
+}
+
+.alert {
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.alert-error {
+  background-color: #fdeded;
+  color: #5f2120;
+  border: 1px solid #f5c2c7;
+}
+
+.alert-success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  border: 1px solid #badbcc;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  text-decoration: none;
+}
+
+.navbar-nav {
+  display: flex;
+  gap: 15px;
+  list-style: none;
+}
+
+.nav-link {
+  color: #333;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: #4285f4;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.table th {
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.error-message {
+  color: #ea4335;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+-----------------
+
+frontend/src/main.tsx:
+
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+--------------------
+
+frontend/src/vite-env.d.ts:
+
+/// <reference types="vite/client" />
+
+-----------------------
+
+frontend/index.html:
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple React Frontend with Authentication and CRUD</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+---------------------
+
+frontend/eslint.config.js:
+
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  { ignores: ['dist'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  }
+);
+
+------------------------
+
+frontend/postcss.config.js:
+
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+-----------------------
+
+frontend/tailwind.config.js:
+
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+---------------------
+
+
+

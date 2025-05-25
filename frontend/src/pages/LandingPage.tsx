@@ -7,23 +7,23 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="container">
-      <div style={{ 
-        textAlign: 'center', 
-        maxWidth: '800px', 
+      <div style={{
+        textAlign: 'center',
+        maxWidth: '800px',
         margin: '80px auto',
         padding: '0 20px'
       }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '20px' }}>
-          Simple React Application
+          Aplicação React Simples
         </h1>
         <p style={{ fontSize: '1.2rem', marginBottom: '40px', color: '#555' }}>
-          A basic frontend with authentication and CRUD operations to connect with your Express backend.
+          Um frontend completo com autenticação e operações CRUD
         </p>
-        
+
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
           {isLoggedIn ? (
             <Link to="/home" className="btn btn-primary">
-              Go to Dashboard
+              Ir para o painel
             </Link>
           ) : (
             <>
@@ -31,7 +31,7 @@ const LandingPage: React.FC = () => {
                 Login
               </Link>
               <Link to="/register" className="btn btn-secondary">
-                Register
+                Registre-se
               </Link>
             </>
           )}
