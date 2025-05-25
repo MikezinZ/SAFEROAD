@@ -2,7 +2,7 @@
 
 Este documento detalha as funcionalidades, tecnologias e a estrutura de código do backend da aplicação SAFEROAD.
 
----
+----
 
 ## 💻 Tecnologias Utilizadas no Backend
 
