@@ -1,7 +1,7 @@
 # 🚀 SAFEROAD: Visão Geral do Frontend
 
 Este documento detalha as funcionalidades, tecnologias e a estrutura de código frontend.
-
+-
 ---
 
 ## 💻 Tecnologias Utilizadas no Frontend
