@@ -85,8 +85,8 @@ A aplicação é estruturada de forma modular e clara, o que facilita significat
 * **`src/index.css`:** 💅 A folha de estilos CSS global da aplicação. Define a aparência básica e o design consistente em todas as páginas e componentes.
 
 ---
-*GRUPO SafeRoad*+
-*Integrante:*
+*GRUPO SafeRoad*
+-*Integrantes:*
 - Diego Ximenes
 - Lewi Gabriel
 - Lucas Maciel
