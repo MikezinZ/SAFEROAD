@@ -40,6 +40,13 @@ testes no postman:
     }
 }
 
+{
+    "nome": "teste3",
+    "email": "teste3@example.com",
+    "senha": "teste123"
+}
+
+
 ---------
 testes no site:
 yurizinho
@@ -57,3 +64,17 @@ sahur123
 tralalero tralala
 tralalero@tralala.com
 tralala123
+
+
+-----------------
+novo banco:
+
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ0ZXN0ZTNAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODI3MjY2MywiZXhwIjoxNzQ4MzU5MDYzfQ.NPupVibls1Z7HbSIoqNK1ePNlWGKg6VRCFM-F2qu8c4",
+    "user": {
+        "id": 1,
+        "nome": "teste3",
+        "email": "teste3@example.com",
+        "senha": "teste123"
+    }
+}

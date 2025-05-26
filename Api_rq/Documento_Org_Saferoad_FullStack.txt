@@ -23,7 +23,7 @@ SAFEROAD
  │ ├── databases.sqlite [✓]
  │ ├── package-lock.json [✓]
  │ └── package.json [✓]
- ├── frontend/
+ ├── frontend/[✓]
  ├── .gitattributes [✓]
  ├── project.txt [✓]
  └── README.md [✓]
@@ -789,9 +789,10 @@ SAFEROAD
  │ │   │   ├── api.ts [✓]
  │ │   │   └── auth.js [✓]
  │ │   ├── App.tsx [✓]
- │ │   ├── Index.css
- │ │   ├── main.tsx
- │ │   └── vite-env.d.ts
+ │ │   ├── Index.css[✓]
+ │ │   ├── main.tsx[✓]
+ │ │   └── vite-env.d.ts[✓]
+ │ ├── .env[✓]
  │ ├── .gitignore [✓]
  │ ├── eslint.config.js [✓]
  │ ├── index.html [✓]
@@ -802,7 +803,7 @@ SAFEROAD
  │ ├── tsconfig.node.json [✓]
  │ ├── package-lock.json [✓]
  │ └── package.json [✓]
- ├── backend/
+ ├── backend/[✓]
  ├── .gitattributes [✓]
  ├── project.txt [✓]
  └── README.md [✓]

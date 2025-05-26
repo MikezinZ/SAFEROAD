@@ -1,0 +1,3 @@
+String de conexão para o banco de dados online: 
+
+postgresql://Saferoad_db_owner:npg_EZlo7Mfdpiq4@ep-shy-truth-a8vv327k-pooler.eastus2.azure.neon.tech/Saferoad_db?sslmode=require
