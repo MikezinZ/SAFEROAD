@@ -9,6 +9,7 @@ EXEMPLO DE REGISTRO:
 }
 
 ---
+testes no postman:
 {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ0ZXN0ZS5ub3ZvQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDgyMzgxMDQsImV4cCI6MTc0ODMyNDUwNH0.qmlYulwnKb5qR6JY8ypyy-xvBBazaMrNKD-uZb3hC_0",
     "user": {
@@ -38,3 +39,21 @@ EXEMPLO DE REGISTRO:
         "senha": "lixo123"
     }
 }
+
+---------
+testes no site:
+yurizinho
+yuriCacador@gmail.com
+yuri123
+----------
+cassio
+goleirofeio@gmail.com
+cassio123
+-----------
+tung tung sahur
+sahur@tung.com
+sahur123
+-----------
+tralalero tralala
+tralalero@tralala.com
+tralala123

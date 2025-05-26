@@ -40,8 +40,8 @@ export async function apiRequest<T>(
 // Common CRUD operations
 
 // O backend retorna um array de usuários
-export async function getUsers<T>(): Promise<ApiResponse<T[]>> {
-  return apiRequest<T[]>('/users');
+export async function getUsers<T>(queryParams: string = ''): Promise<ApiResponse<T>> { // Aceita queryParams
+  return apiRequest<T>(`/users${queryParams}`); // Concatena queryParams
 }
 
 // O backend cria um usuário

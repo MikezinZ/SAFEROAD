@@ -212,17 +212,39 @@ const { User } = require('../models');
 // a classe contém os métodos responsáveis por manipular e responder às requisições HTTP relacionadas a usuários.
 class UserController {
 
-    // Retorna todos os usuários da base de dados.
-    async getAllUsers(req, res) { // 
+
+    async getAllUsers(req, res) {
         try {
-            const users = await User.findAll({
-                attributes: ['id', 'nome', 'email']
+
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
+
+
+            const offset = (page - 1) * limit;
+
+
+            const { count, rows } = await User.findAndCountAll({
+                attributes: ['id', 'nome', 'email', 'role'],
+                limit: limit,
+                offset: offset,
+                order: [
+                    ['id', 'ASC']
+                ]
             });
-            res.json(users);
+
+            res.json({
+                totalItems: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                users: rows
+            });
+
         } catch (error) {
+            console.error("Erro ao buscar usuários com paginação:", error);
             res.status(500).json({ error: error.message });
         }
     }
+
 
 
     //  Recupera um usuário específico pelo ID.
@@ -822,20 +844,31 @@ const CrudOperations: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
 
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(1); // Sempre busca a primeira página ao montar o componente
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageToFetch: number = 1) => {
     setLoading(true);
     setError(null);
-    const response = await getUsers<User>();
+    const response = await getUsers<any>(`?page=${pageToFetch}&limit=${itemsPerPage}`);
+
     if (response.error) {
       setError(response.error);
+      setUsers([]);
+      setTotalPages(0);
+      setTotalItems(0);
     } else if (response.data) {
-      setUsers(response.data);
+      setUsers(response.data.users);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage);
+      setTotalItems(response.data.totalItems);
     }
     setLoading(false);
   };
@@ -877,6 +910,7 @@ const CrudOperations: React.FC = () => {
         ));
         showSuccessMessage('Usuário atualizado com sucesso!');
         resetForm();
+        fetchUsers(currentPage);
       } else {
         setError(response.error ?? 'Ocorreu um erro ao atualizar.')
       }
@@ -894,7 +928,7 @@ const CrudOperations: React.FC = () => {
       const response = await createUser<User>(dataToCreate);
 
       if (!response.error && response.data) {
-        fetchUsers();
+        fetchUsers(1);
         showSuccessMessage('Usuário criado com sucesso!');
         resetForm();
       } else {
@@ -924,6 +958,11 @@ const CrudOperations: React.FC = () => {
     } else {
       setUsers(users.filter(user => user.id !== id));
       showSuccessMessage('Usuário deletado com sucesso!');
+      if (users.length === 1 && currentPage > 1) { // Se era o último item de uma página que não é a primeira
+        fetchUsers(currentPage - 1);
+      } else {
+        fetchUsers(currentPage); // Recarrega a página atual
+      }
     }
 
     setLoading(false);
@@ -1036,6 +1075,29 @@ const CrudOperations: React.FC = () => {
           </tbody>
         </table>
       )}
+      {/* CONTROLES DE PAGINAÇÃO */}
+      {totalPages > 0 && (
+        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            onClick={() => fetchUsers(currentPage - 1)}
+            disabled={currentPage <= 1 || loading}
+            className="btn btn-secondary"
+          >
+            Anterior
+          </button>
+          <span>
+            Página {currentPage} de {totalPages} (Total de itens: {totalItems})
+          </span>
+          <button
+            onClick={() => fetchUsers(currentPage + 1)}
+            disabled={currentPage >= totalPages || loading}
+            className="btn btn-secondary"
+          >
+            Próxima
+          </button>
+        </div>
+      )}
+
     </div>
   );
 };
@@ -1617,8 +1679,8 @@ export async function apiRequest<T>(
 // Common CRUD operations
 
 // O backend retorna um array de usuários
-export async function getUsers<T>(): Promise<ApiResponse<T[]>> {
-  return apiRequest<T[]>('/users');
+export async function getUsers<T>(queryParams: string = ''): Promise<ApiResponse<T>> { // Aceita queryParams
+  return apiRequest<T>(`/users${queryParams}`); // Concatena queryParams
 }
 
 // O backend cria um usuário

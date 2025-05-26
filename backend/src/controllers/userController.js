@@ -4,17 +4,39 @@ const { User } = require('../models');
 // a classe contém os métodos responsáveis por manipular e responder às requisições HTTP relacionadas a usuários.
 class UserController {
 
-    // Retorna todos os usuários da base de dados.
-    async getAllUsers(req, res) { // 
+
+    async getAllUsers(req, res) {
         try {
-            const users = await User.findAll({
-                attributes: ['id', 'nome', 'email']
+
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
+
+
+            const offset = (page - 1) * limit;
+
+
+            const { count, rows } = await User.findAndCountAll({
+                attributes: ['id', 'nome', 'email', 'role'],
+                limit: limit,
+                offset: offset,
+                order: [
+                    ['id', 'ASC']
+                ]
             });
-            res.json(users);
+
+            res.json({
+                totalItems: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page,
+                users: rows
+            });
+
         } catch (error) {
+            console.error("Erro ao buscar usuários com paginação:", error);
             res.status(500).json({ error: error.message });
         }
     }
+
 
 
     //  Recupera um usuário específico pelo ID.

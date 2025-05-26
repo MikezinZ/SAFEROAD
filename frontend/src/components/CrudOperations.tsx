@@ -16,20 +16,31 @@ const CrudOperations: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
 
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(1); // Sempre busca a primeira página ao montar o componente
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageToFetch: number = 1) => {
     setLoading(true);
     setError(null);
-    const response = await getUsers<User>();
+    const response = await getUsers<any>(`?page=${pageToFetch}&limit=${itemsPerPage}`);
+
     if (response.error) {
       setError(response.error);
+      setUsers([]);
+      setTotalPages(0);
+      setTotalItems(0);
     } else if (response.data) {
-      setUsers(response.data);
+      setUsers(response.data.users);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage);
+      setTotalItems(response.data.totalItems);
     }
     setLoading(false);
   };
@@ -71,6 +82,7 @@ const CrudOperations: React.FC = () => {
         ));
         showSuccessMessage('Usuário atualizado com sucesso!');
         resetForm();
+        fetchUsers(currentPage);
       } else {
         setError(response.error ?? 'Ocorreu um erro ao atualizar.')
       }
@@ -88,7 +100,7 @@ const CrudOperations: React.FC = () => {
       const response = await createUser<User>(dataToCreate);
 
       if (!response.error && response.data) {
-        fetchUsers();
+        fetchUsers(1);
         showSuccessMessage('Usuário criado com sucesso!');
         resetForm();
       } else {
@@ -118,6 +130,11 @@ const CrudOperations: React.FC = () => {
     } else {
       setUsers(users.filter(user => user.id !== id));
       showSuccessMessage('Usuário deletado com sucesso!');
+      if (users.length === 1 && currentPage > 1) { // Se era o último item de uma página que não é a primeira
+        fetchUsers(currentPage - 1);
+      } else {
+        fetchUsers(currentPage); // Recarrega a página atual
+      }
     }
 
     setLoading(false);
@@ -230,6 +247,29 @@ const CrudOperations: React.FC = () => {
           </tbody>
         </table>
       )}
+      {/* CONTROLES DE PAGINAÇÃO */}
+      {totalPages > 0 && (
+        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            onClick={() => fetchUsers(currentPage - 1)}
+            disabled={currentPage <= 1 || loading}
+            className="btn btn-secondary"
+          >
+            Anterior
+          </button>
+          <span>
+            Página {currentPage} de {totalPages} (Total de itens: {totalItems})
+          </span>
+          <button
+            onClick={() => fetchUsers(currentPage + 1)}
+            disabled={currentPage >= totalPages || loading}
+            className="btn btn-secondary"
+          >
+            Próxima
+          </button>
+        </div>
+      )}
+
     </div>
   );
 };
