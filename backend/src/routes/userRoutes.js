@@ -1,6 +1,6 @@
 const express = require('express');
 const userController = require('../controllers/userController');
-const { body } = require('express-validator');
+const { body, validationResult } = require('express-validator');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router(); // Cria uma instância do roteador
@@ -70,11 +70,19 @@ router.get('/:id', authMiddleware, userController.getUserById);
 // Define a rota para criar um novo usuário
 // O middleware de autenticação é aplicado a esta rota
 router.post('/',
+    authMiddleware,
     [
-        body('nome').notEmpty(),
-        body('email').isEmail(),
-        body('senha').isLength({ min: 6 })
+        body('nome').notEmpty().withMessage('O campo nome é obrigatório.'),
+        body('email').isEmail().withMessage('Forneça um email válido.'),
+        body('senha').isLength({ min: 6 }).withMessage('A senha precisa ter no mínimo 6 caracteres.')
     ],
+    (req, res, next) => { // Adicione esta função intermediária
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    },
     userController.createUser
 );
 

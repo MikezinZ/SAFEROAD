@@ -18,8 +18,8 @@ SAFEROAD
  │ │   └── tests/ [✓]
  │ │       ├── auth.tests.js [✓]
  │ │       └── index.js [✓]
- │ ├── env/ [✓]
- │ │   └── databases.sqlite [✓]
+ │ ├── .env [✓]
+ │ ├── databases.sqlite [✓]
  │ ├── package-lock.json [✓]
  │ └── package.json [✓]
  ├── frontend/
@@ -114,7 +114,7 @@ sequelize.sync()
         console.error('Falha ao sincronizar com o banco de dados:', err);
     });
 
-module.exports = app; 
+module.exports = app;  
 
 ---------
 
@@ -130,7 +130,7 @@ const sequelize = new Sequelize({
 
 module.exports = sequelize;
 
-backend/src/controllers/authController.sj:
+backend/src/controllers/authController.js:
 const jwt = require("jsonwebtoken");
 const { User } = require('../models');
 
@@ -159,7 +159,14 @@ class AuthController {
                 { expiresIn: "24h" }
             );
 
-            res.json({ token });
+            res.json({
+                token,
+                user: {
+                    id: user.id,
+                    nome: user.nome, // Note que o campo é 'nome'
+                    email: user.email
+                }
+            });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -310,8 +317,6 @@ module.exports = authMiddleware;
 
 -------------
 
-backend/src/models/index.js:
-
 const sequelize = require('../config/database');
 const User = require('./user');
 
@@ -323,7 +328,6 @@ module.exports = {
 -------------
 
 backend/src/models/user.js:
-
 
 // importação do sequelize e bcryptjs
 const { DataTypes } = require('sequelize');
@@ -477,14 +481,13 @@ router.post('/register',
 );
 
 module.exports = router;
-
 ---------------
 
 backend/src/routes/userRoutes.js:
 
 const express = require('express');
 const userController = require('../controllers/userController');
-const { body } = require('express-validator');
+const { body, validationResult } = require('express-validator');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router(); // Cria uma instância do roteador
@@ -528,7 +531,6 @@ router.get('/', authMiddleware, userController.getAllUsers);
 router.get('/:id', authMiddleware, userController.getUserById);
 
 /**
-
  * /api/users:
  *  post:
  *    summary: Criar um novo usuário
@@ -555,11 +557,19 @@ router.get('/:id', authMiddleware, userController.getUserById);
 // Define a rota para criar um novo usuário
 // O middleware de autenticação é aplicado a esta rota
 router.post('/',
+    authMiddleware,
     [
-        body('nome').notEmpty(),
-        body('email').isEmail(),
-        body('senha').isLength({ min: 6 })
+        body('nome').notEmpty().withMessage('O campo nome é obrigatório.'),
+        body('email').isEmail().withMessage('Forneça um email válido.'),
+        body('senha').isLength({ min: 6 }).withMessage('A senha precisa ter no mínimo 6 caracteres.')
     ],
+    (req, res, next) => { // Adicione esta função intermediária
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    },
     userController.createUser
 );
 
@@ -615,6 +625,9 @@ router.put('/:id', authMiddleware, userController.updateUser);
 router.delete('/:id', authMiddleware, userController.deleteUser);
 
 module.exports = router;
+
+
+
 
 ---------------
 
@@ -696,6 +709,7 @@ backend/package.json:
   "dependencies": {
     "@fastify/swagger": "^9.4.2",
     "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -708,9 +722,11 @@ backend/package.json:
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "swagger-autogen": "^2.23.7"
   }
 }
+
 
 ---------------------------
 
@@ -758,52 +774,50 @@ ESTRUTURA DE CÓDIGO COMPLETA DE TODO FRONTEND;
 
 frontend/src/components/CrudOperations.tsx:
 
-
 import React, { useState, useEffect } from 'react';
-import { getItems, createItem, updateItem, deleteItem } from '../services/api';
+import { getUsers, createUser, updateUser, deleteUser } from '../services/api';
 
-interface Item {
+interface User {
   id: string;
-  name: string;
-  description: string;
+  nome: string;
+  email: string;
   [key: string]: any;
 }
 
 const CrudOperations: React.FC = () => {
-  const [items, setItems] = useState<Item[]>([]);
-  const [currentItem, setCurrentItem] = useState<Partial<Item>>({ name: '', description: '' });
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<Partial<User>>({ nome: '', email: '' });
+  const [password, setPassword] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Load items on component mount
+
   useEffect(() => {
-    fetchItems();
+    fetchUsers();
   }, []);
 
-  const fetchItems = async () => {
+  const fetchUsers = async () => {
     setLoading(true);
     setError(null);
-    
-    const response = await getItems<Item>();
-    
+    const response = await getUsers<User>();
     if (response.error) {
       setError(response.error);
     } else if (response.data) {
-      setItems(response.data);
+      setUsers(response.data);
     }
-    
     setLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setCurrentItem({ ...currentItem, [name]: value });
+    setCurrentUser({ ...currentUser, [name]: value });
   };
 
   const resetForm = () => {
-    setCurrentItem({ name: '', description: '' });
+    setCurrentUser({ nome: '', email: '' });
+    setPassword('')
     setIsEditing(false);
   };
 
@@ -816,113 +830,134 @@ const CrudOperations: React.FC = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
-    if (!currentItem.name) {
-      setError('Name is required');
-      setLoading(false);
-      return;
-    }
 
-    let response;
-    
-    if (isEditing && currentItem.id) {
-      response = await updateItem<Item>(currentItem.id, currentItem);
-      
+    if (isEditing && currentUser.id) {
+      if (!currentUser.nome || !currentUser.email) {
+        setError('Nome e Email são obrigatórios');
+        setLoading(false);
+        return;
+      }
+
+      const dataToUpdate = { nome: currentUser.nome, email: currentUser.email };
+      const response = await updateUser<User>(currentUser.id, dataToUpdate);
+
       if (!response.error) {
-        setItems(items.map(item => 
-          item.id === currentItem.id ? { ...item, ...currentItem } : item
+        setUsers(users.map(user =>
+          user.id === currentUser.id ? { ...user, ...dataToUpdate } : user
         ));
-        showSuccessMessage('Item updated successfully!');
+        showSuccessMessage('Usuário atualizado com sucesso!');
+        resetForm();
+      } else {
+        setError(response.error ?? 'Ocorreu um erro ao atualizar.')
       }
     } else {
-      response = await createItem<Item>(currentItem);
-      
+      if (!currentUser.nome || !currentUser.email || !password) {
+        setError('Nome, Email e Senha são obrigatórios');
+        setLoading(false);
+        return
+      }
+      const dataToCreate = {
+        nome: currentUser.nome,
+        email: currentUser.email,
+        senha: password
+      };
+      const response = await createUser<User>(dataToCreate);
+
       if (!response.error && response.data) {
-        setItems([...items, response.data]);
-        showSuccessMessage('Item created successfully!');
+        fetchUsers();
+        showSuccessMessage('Usuário criado com sucesso!');
+        resetForm();
+      } else {
+        setError(response.error ?? 'Ocorreu um erro ao criar o usuário.');
       }
     }
-    
-    if (response.error) {
-      setError(response.error);
-    } else {
-      resetForm();
-    }
-    
     setLoading(false);
   };
 
-  const handleEdit = (item: Item) => {
-    setCurrentItem(item);
+  const handleEdit = (user: User) => {
+    setCurrentUser(user);
     setIsEditing(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) {
+    if (!window.confirm('Tem certeza que deseja deletar este usuário?')) {
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
-    const response = await deleteItem(id);
-    
+
+    const response = await deleteUser(id);
+
     if (response.error) {
       setError(response.error);
     } else {
-      setItems(items.filter(item => item.id !== id));
-      showSuccessMessage('Item deleted successfully!');
+      setUsers(users.filter(user => user.id !== id));
+      showSuccessMessage('Usuário deletado com sucesso!');
     }
-    
+
     setLoading(false);
   };
 
   return (
     <div className="card">
       <h2 style={{ marginBottom: '20px' }}>
-        {isEditing ? 'Edit Item' : 'Create New Item'}
+        {isEditing ? 'Editar Usuário' : 'Criar Novo Usuário'}
       </h2>
-      
+
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="name">Name</label>
+          <label htmlFor="nome">Nome</label>
           <input
             type="text"
-            id="name"
-            name="name"
+            id="nome"
+            name="nome"
             className="form-control"
-            value={currentItem.name || ''}
+            value={currentUser.nome || ''}
             onChange={handleInputChange}
           />
         </div>
-        
+
         <div className="form-group">
-          <label htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            name="description"
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
             className="form-control"
-            value={currentItem.description || ''}
+            value={currentUser.email || ''}
             onChange={handleInputChange}
-            rows={3}
           />
         </div>
-        
+        {!isEditing && (
+          <div className="form-group">
+            <label htmlFor="password">Senha</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              className="form-control"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        )}
+
         <div className="form-group" style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary"
             disabled={loading}
           >
             {loading ? 'Processing...' : isEditing ? 'Update' : 'Create'}
           </button>
-          
+
           {isEditing && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-secondary"
               onClick={resetForm}
             >
@@ -931,39 +966,39 @@ const CrudOperations: React.FC = () => {
           )}
         </div>
       </form>
-      
-      <h2 style={{ margin: '30px 0 20px' }}>Items List</h2>
-      
-      {loading && <p>Loading...</p>}
-      
-      {items.length === 0 && !loading ? (
-        <p>No items found. Create one above!</p>
+
+      <h2 style={{ margin: '30px 0 20px' }}>Lista de Usuários</h2>
+
+      {loading && <p>Carregando...</p>}
+
+      {users.length === 0 && !loading ? (
+        <p>Nenhum usuário encontrado!</p>
       ) : (
         <table className="table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Actions</th>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            {items.map(item => (
-              <tr key={item.id}>
-                <td>{item.name}</td>
-                <td>{item.description}</td>
+            {users.map(user => (
+              <tr key={user.id}>
+                <td>{user.nome}</td>
+                <td>{user.email}</td>
                 <td className="action-buttons">
-                  <button 
-                    onClick={() => handleEdit(item)} 
+                  <button
+                    onClick={() => handleEdit(user)}
                     className="btn btn-secondary"
                   >
-                    Edit
+                    Editar
                   </button>
-                  <button 
-                    onClick={() => handleDelete(item.id)} 
+                  <button
+                    onClick={() => handleDelete(user.id)}
                     className="btn btn-danger"
                   >
-                    Delete
+                    Deletar
                   </button>
                 </td>
               </tr>
@@ -980,7 +1015,6 @@ export default CrudOperations;
 ------------------------
 
 frontend/src/components/LoginForm.tsx;
-
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -989,7 +1023,7 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
-  
+
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
 
@@ -998,15 +1032,15 @@ const LoginForm: React.FC = () => {
     let isValid = true;
 
     if (!email) {
-      errors.email = 'Email is required';
+      errors.email = 'Email é obrigatório';
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      errors.email = 'Email is invalid';
+      errors.email = 'Email inválido';
       isValid = false;
     }
 
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = 'Senha é obrigatória';
       isValid = false;
     }
 
@@ -1017,7 +1051,7 @@ const LoginForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -1031,9 +1065,9 @@ const LoginForm: React.FC = () => {
   return (
     <div className="card">
       <h2 style={{ marginBottom: '20px' }}>Login</h2>
-      
+
       {error && <div className="alert alert-error">{error}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="email">Email</label>
@@ -1046,9 +1080,9 @@ const LoginForm: React.FC = () => {
           />
           {formErrors.email && <div className="error-message">{formErrors.email}</div>}
         </div>
-        
+
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Senha</label>
           <input
             type="password"
             id="password"
@@ -1058,13 +1092,13 @@ const LoginForm: React.FC = () => {
           />
           {formErrors.password && <div className="error-message">{formErrors.password}</div>}
         </div>
-        
+
         <div className="form-group">
           <button type="submit" className="btn btn-primary">Login</button>
         </div>
-        
+
         <div>
-          Don't have an account? <Link to="/register">Register</Link>
+          Não tem uma conta? <Link to="/register">Registre-se</Link>
         </div>
       </form>
     </div>
@@ -1087,21 +1121,21 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="container">
-        <Link to="/" className="navbar-brand">MyApp</Link>
-        
+        <Link to="/" className="navbar-brand">SAFEROAD</Link>
+
         <ul className="navbar-nav">
           {isLoggedIn ? (
             <>
               <li>
-                <Link to="/home" className="nav-link">Home</Link>
+                <Link to="/home" className="nav-link">Início</Link>
               </li>
               <li>
-                <button 
-                  onClick={logout} 
-                  className="btn btn-secondary" 
+                <button
+                  onClick={logout}
+                  className="btn btn-secondary"
                   style={{ marginLeft: '10px' }}
                 >
-                  Logout
+                  Sair
                 </button>
               </li>
             </>
@@ -1111,7 +1145,7 @@ const Navbar: React.FC = () => {
                 <Link to="/login" className="nav-link">Login</Link>
               </li>
               <li>
-                <Link to="/register" className="nav-link">Register</Link>
+                <Link to="/register" className="nav-link">Registre-se</Link>
               </li>
             </>
           )}
@@ -1126,7 +1160,6 @@ export default Navbar;
 -----------------------
 
 frontend/src/components/RegisterForm.tsx:
-
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -1142,7 +1175,7 @@ const RegisterForm: React.FC = () => {
     password?: string;
     confirmPassword?: string;
   }>({});
-  
+
   const { register, error, clearError } = useAuth();
   const navigate = useNavigate();
 
@@ -1156,28 +1189,28 @@ const RegisterForm: React.FC = () => {
     let isValid = true;
 
     if (!username) {
-      errors.username = 'Username is required';
+      errors.username = 'Nome de usuário é obrigatório';
       isValid = false;
     }
 
     if (!email) {
-      errors.email = 'Email is required';
+      errors.email = 'Email é obrigatório';
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      errors.email = 'Email is invalid';
+      errors.email = 'Email inválido';
       isValid = false;
     }
 
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = 'Senha é obrigatória';
       isValid = false;
     } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = 'A senha deve ter pelo menos 6 caracteres';
       isValid = false;
     }
 
     if (password !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = 'As senhas não correspondem';
       isValid = false;
     }
 
@@ -1188,7 +1221,7 @@ const RegisterForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -1201,13 +1234,13 @@ const RegisterForm: React.FC = () => {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: '20px' }}>Register</h2>
-      
+      <h2 style={{ marginBottom: '20px' }}>Registre-se</h2>
+
       {error && <div className="alert alert-error">{error}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="username">Username</label>
+          <label htmlFor="username">Nome de Usuário</label>
           <input
             type="text"
             id="username"
@@ -1217,7 +1250,7 @@ const RegisterForm: React.FC = () => {
           />
           {formErrors.username && <div className="error-message">{formErrors.username}</div>}
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input
@@ -1229,9 +1262,9 @@ const RegisterForm: React.FC = () => {
           />
           {formErrors.email && <div className="error-message">{formErrors.email}</div>}
         </div>
-        
+
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Senha</label>
           <input
             type="password"
             id="password"
@@ -1241,9 +1274,9 @@ const RegisterForm: React.FC = () => {
           />
           {formErrors.password && <div className="error-message">{formErrors.password}</div>}
         </div>
-        
+
         <div className="form-group">
-          <label htmlFor="confirmPassword">Confirm Password</label>
+          <label htmlFor="confirmPassword">Confirme a sua senha</label>
           <input
             type="password"
             id="confirmPassword"
@@ -1255,13 +1288,13 @@ const RegisterForm: React.FC = () => {
             <div className="error-message">{formErrors.confirmPassword}</div>
           )}
         </div>
-        
+
         <div className="form-group">
           <button type="submit" className="btn btn-primary">Register</button>
         </div>
-        
+
         <div>
-          Already have an account? <Link to="/login">Login</Link>
+          Já possui uma conta? <Link to="/login">Login</Link>
         </div>
       </form>
     </div>
@@ -1273,7 +1306,6 @@ export default RegisterForm;
 ------------------------------
 
 frontend/src/contexts/AuthContext.tsx:
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getUser, isAuthenticated, login, logout, register } from '../services/auth';
 
@@ -1385,7 +1417,6 @@ export const useAuth = (): AuthContextType => {
 -----------------------
 
 frontend/src/pages/HomePage.tsx:
-
 import React from 'react';
 import CrudOperations from '../components/CrudOperations';
 import { Navigate } from 'react-router-dom';
@@ -1401,10 +1432,10 @@ const HomePage: React.FC = () => {
   return (
     <div className="container" style={{ margin: '40px auto' }}>
       <div style={{ marginBottom: '30px' }}>
-        <h1>Welcome, {user?.username}!</h1>
-        <p>This is your dashboard where you can manage your items.</p>
+        <h1>Bem Vindo, {user?.username}!</h1>
+        <p>Este é o seu painel onde você pode gerenciar seus itens.</p>
       </div>
-      
+
       <CrudOperations />
     </div>
   );
@@ -1415,7 +1446,6 @@ export default HomePage;
 ---------------------------
 
 frontend/src/pages/LandingPage.tsx:
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -1425,23 +1455,23 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="container">
-      <div style={{ 
-        textAlign: 'center', 
-        maxWidth: '800px', 
+      <div style={{
+        textAlign: 'center',
+        maxWidth: '800px',
         margin: '80px auto',
         padding: '0 20px'
       }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '20px' }}>
-          Simple React Application
+          Aplicação React Simples
         </h1>
         <p style={{ fontSize: '1.2rem', marginBottom: '40px', color: '#555' }}>
-          A basic frontend with authentication and CRUD operations to connect with your Express backend.
+          Um frontend completo com autenticação e operações CRUD
         </p>
-        
+
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
           {isLoggedIn ? (
             <Link to="/home" className="btn btn-primary">
-              Go to Dashboard
+              Ir para o painel
             </Link>
           ) : (
             <>
@@ -1449,7 +1479,7 @@ const LandingPage: React.FC = () => {
                 Login
               </Link>
               <Link to="/register" className="btn btn-secondary">
-                Register
+                Registre-se
               </Link>
             </>
           )}
@@ -1464,7 +1494,6 @@ export default LandingPage;
 ------------------------
 
 frontend/src/pages/LoginPage.tsx:
-
 import React from 'react';
 import LoginForm from '../components/LoginForm';
 import { Navigate } from 'react-router-dom';
@@ -1479,7 +1508,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Welcome Back</h1>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Bem vindo de volta!</h1>
       <LoginForm />
     </div>
   );
@@ -1490,7 +1519,6 @@ export default LoginPage;
 ---------------------
 
 frontend/src/pages/RegisterPage.tsx:
-
 import React from 'react';
 import RegisterForm from '../components/RegisterForm';
 import { Navigate } from 'react-router-dom';
@@ -1505,7 +1533,7 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Create Account</h1>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Crie sua conta</h1>
       <RegisterForm />
     </div>
   );
@@ -1519,7 +1547,7 @@ frontend/src/services/api.ts:
 
 import { getToken } from './auth';
 
-const API_URL = 'http://localhost:3000/api'; // Change this to your backend URL
+const API_URL = 'http://localhost:3000/api';
 
 interface ApiResponse<T> {
   data?: T;
@@ -1532,7 +1560,7 @@ export async function apiRequest<T>(
   data?: any
 ): Promise<ApiResponse<T>> {
   const token = getToken();
-  
+
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method,
@@ -1546,36 +1574,36 @@ export async function apiRequest<T>(
     const responseData = await response.json();
 
     if (!response.ok) {
-      return { error: responseData.message || 'Something went wrong' };
+      return { error: responseData.message || 'Algo deu errado' };
     }
 
     return { data: responseData };
   } catch (error) {
-    console.error('API request failed:', error);
-    return { error: 'Network error. Please try again.' };
+    console.error('Falha na solicitação da API:', error);
+    return { error: 'Erro de rede. Tente novamente.' };
   }
 }
 
 // Common CRUD operations
 
-export async function getItems<T>(): Promise<ApiResponse<T[]>> {
-  return apiRequest<T[]>('/items');
+// O backend retorna um array de usuários
+export async function getUsers<T>(): Promise<ApiResponse<T[]>> {
+  return apiRequest<T[]>('/users');
 }
 
-export async function getItem<T>(id: string): Promise<ApiResponse<T>> {
-  return apiRequest<T>(`/items/${id}`);
+// O backend cria um usuário
+export async function createUser<T>(data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>('/users', 'POST', data);
 }
 
-export async function createItem<T>(data: Partial<T>): Promise<ApiResponse<T>> {
-  return apiRequest<T>('/items', 'POST', data);
+// O backend atualiza um usuário
+export async function updateUser<T>(id: string, data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>(`/users/${id}`, 'PUT', data);
 }
 
-export async function updateItem<T>(id: string, data: Partial<T>): Promise<ApiResponse<T>> {
-  return apiRequest<T>(`/items/${id}`, 'PUT', data);
-}
-
-export async function deleteItem(id: string): Promise<ApiResponse<{ success: boolean }>> {
-  return apiRequest<{ success: boolean }>(`/items/${id}`, 'DELETE');
+// O backend deleta um usuário
+export async function deleteUser(id: string): Promise<ApiResponse<{ success: boolean }>> {
+  return apiRequest<{ success: boolean }>(`/users/${id}`, 'DELETE');
 }
 
 ---------------------
@@ -1637,23 +1665,29 @@ export const login = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, senha: password }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return { success: false, error: data.message || 'Login failed' };
+      return { success: false, error: data.message || 'Falha no Login' };
     }
 
     // Store auth data
     setToken(data.token);
-    setUser(data.user);
+    const userData = {
+      id: data.user.id,
+      username: data.user.nome, // Convertendo 'nome' para 'username'
+      email: data.user.email,
+    };
+    setUser(userData);
+
 
     return { success: true };
   } catch (error) {
-    console.error('Login failed:', error);
-    return { success: false, error: 'Network error. Please try again.' };
+    console.error('Falha no Login: ', error);
+    return { success: false, error: 'Erro de rede. Tente novamente.' };
   }
 };
 
@@ -1668,19 +1702,19 @@ export const register = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify({ nome: username, email, senha: password }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return { success: false, error: data.message || 'Registration failed' };
+      return { success: false, error: data.message || 'O registro falhou' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Registration failed:', error);
-    return { success: false, error: 'Network error. Please try again.' };
+    console.error('O registro falhou:', error);
+    return { success: false, error: 'Erro de rede. Tente novamente.' };
   }
 };
 
@@ -1692,7 +1726,6 @@ export const logout = (): void => {
 export const isAuthenticated = (): boolean => {
   return !!getToken();
 };
-
 
 ----------------------------
 
@@ -1926,17 +1959,20 @@ frontend/src/vite-env.d.ts:
 frontend/index.html:
 
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Simple React Frontend with Authentication and CRUD</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saferoad CRUD projeto</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
 
 ---------------------
@@ -1972,6 +2008,7 @@ export default tseslint.config(
   }
 );
 
+
 ------------------------
 
 frontend/postcss.config.js:
@@ -1987,12 +2024,15 @@ export default {
 
 frontend/tailwind.config.js:
 
+/** @type {import('tailwindcss').Config} */
 export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {},
   },
+  plugins: [],
 };
+
 
 ---------------------
 

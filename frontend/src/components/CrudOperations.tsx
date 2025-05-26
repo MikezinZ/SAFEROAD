@@ -10,13 +10,14 @@ interface User {
 
 const CrudOperations: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<Partial<User>>({ name: '', email: '' });
+  const [currentUser, setCurrentUser] = useState<Partial<User>>({ nome: '', email: '' });
+  const [password, setPassword] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Load items on component mount
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -24,15 +25,12 @@ const CrudOperations: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
-
     const response = await getUsers<User>();
-
     if (response.error) {
       setError(response.error);
     } else if (response.data) {
       setUsers(response.data);
     }
-
     setLoading(false);
   };
 
@@ -42,7 +40,8 @@ const CrudOperations: React.FC = () => {
   };
 
   const resetForm = () => {
-    setCurrentUser({ name: '', description: '' });
+    setCurrentUser({ nome: '', email: '' });
+    setPassword('')
     setIsEditing(false);
   };
 
@@ -56,39 +55,46 @@ const CrudOperations: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    if (!currentUser.nome || !currentUser.email) {
-      setError('Nome e Email são obrigatórios');
-      setLoading(false);
-      return;
-    }
-
-    let response;
-
     if (isEditing && currentUser.id) {
-      response = await updateUser<User>(currentUser.id, currentUser);
+      if (!currentUser.nome || !currentUser.email) {
+        setError('Nome e Email são obrigatórios');
+        setLoading(false);
+        return;
+      }
+
+      const dataToUpdate = { nome: currentUser.nome, email: currentUser.email };
+      const response = await updateUser<User>(currentUser.id, dataToUpdate);
 
       if (!response.error) {
         setUsers(users.map(user =>
-          user.id === currentUser.id ? { ...user, ...currentUser } : user
+          user.id === currentUser.id ? { ...user, ...dataToUpdate } : user
         ));
         showSuccessMessage('Usuário atualizado com sucesso!');
+        resetForm();
+      } else {
+        setError(response.error ?? 'Ocorreu um erro ao atualizar.')
       }
     } else {
-      const dataToCreate = { ...currentUser, senha: 'password123' };
-      response = await createUser<User>(currentUser);
+      if (!currentUser.nome || !currentUser.email || !password) {
+        setError('Nome, Email e Senha são obrigatórios');
+        setLoading(false);
+        return
+      }
+      const dataToCreate = {
+        nome: currentUser.nome,
+        email: currentUser.email,
+        senha: password
+      };
+      const response = await createUser<User>(dataToCreate);
 
       if (!response.error && response.data) {
-        setUsers([...users, response.data]);
+        fetchUsers();
         showSuccessMessage('Usuário criado com sucesso!');
+        resetForm();
+      } else {
+        setError(response.error ?? 'Ocorreu um erro ao criar o usuário.');
       }
     }
-
-    if (response.error) {
-      setError(response.error);
-    } else {
-      resetForm();
-    }
-
     setLoading(false);
   };
 
@@ -134,7 +140,7 @@ const CrudOperations: React.FC = () => {
             id="nome"
             name="nome"
             className="form-control"
-            value={currentUser.name || ''}
+            value={currentUser.nome || ''}
             onChange={handleInputChange}
           />
         </div>
@@ -150,6 +156,19 @@ const CrudOperations: React.FC = () => {
             onChange={handleInputChange}
           />
         </div>
+        {!isEditing && (
+          <div className="form-group">
+            <label htmlFor="password">Senha</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              className="form-control"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        )}
 
         <div className="form-group" style={{ display: 'flex', gap: '10px' }}>
           <button

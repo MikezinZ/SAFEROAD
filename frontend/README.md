@@ -84,7 +84,7 @@ A aplicação é estruturada de forma modular e clara, o que facilita significat
 * **`public/index.html`:** 🕸️ O arquivo HTML principal que serve como a "casca" para a aplicação React. É aqui que o JavaScript do React será injetado para construir a interface.
 * **`src/index.css`:** 💅 A folha de estilos CSS global da aplicação. Define a aparência básica e o design consistente em todas as páginas e componentes.
 
----
+---------------------------
 *GRUPO SafeRoad*
 -*Integrantes:*
 - Diego Ximenes
