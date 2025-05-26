@@ -2,6 +2,7 @@ const express = require('express');
 const userController = require('../controllers/userController');
 const { body, validationResult } = require('express-validator');
 const authMiddleware = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 
 const router = express.Router(); // Cria uma instância do roteador
 
@@ -135,7 +136,7 @@ router.put('/:id', authMiddleware, userController.updateUser);
  *     204:
  *     description: Usuário deletado com sucesso
  */
-router.delete('/:id', authMiddleware, userController.deleteUser);
+router.delete('/:id', authMiddleware, authorize(['admin']), userController.deleteUser);
 
 module.exports = router;
 

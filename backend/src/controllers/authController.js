@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { User } = require('../models');
 
-const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta"; // Substitua pela sua chave secreta real
+const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta";
 
 
 // Controller de autenticação
@@ -21,7 +21,7 @@ class AuthController {
                 return res.status(401).json({ message: "Credenciais inválidas" });
             }
             const token = jwt.sign(
-                { id: user.id, email: user.email },
+                { id: user.id, email: user.email, role: user.role },
                 JWT_SECRET,
                 { expiresIn: "24h" }
             );

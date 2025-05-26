@@ -8,7 +8,8 @@ SAFEROAD
  │ │   │   ├── authController/ [✓]
  │ │   │   └── userController/ [✓]
  │ │   ├── middleware/ [✓]
- │ │   │   └── auth.js [✓]
+ │ │   │   ├── auth.js [✓]
+ │ │   │   └── authorize.js[✓]
  │ │   ├── models/ [✓]
  │ │   │   ├── index.js [✓]
  │ │   │   └── users.js [✓]
@@ -130,7 +131,10 @@ const sequelize = new Sequelize({
 
 module.exports = sequelize;
 
-backend/src/controllers/authController.js:
+--------------------------------
+
+backend/src/controllers/authController.js: 
+
 const jwt = require("jsonwebtoken");
 const { User } = require('../models');
 
@@ -154,7 +158,7 @@ class AuthController {
                 return res.status(401).json({ message: "Credenciais inválidas" });
             }
             const token = jwt.sign(
-                { id: user.id, email: user.email },
+                { id: user.id, email: user.email, role: user.role },
                 JWT_SECRET,
                 { expiresIn: "24h" }
             );
@@ -287,6 +291,31 @@ class UserController {
 module.exports = new UserController();
 
 --------------
+backend/src/middleware/authorize.js:
+
+const authorize = (allowedRoles) => {
+    return (req, res, next) => {
+
+        const userRole = req.user?.role;
+
+        if (!userRole) {
+            return res.status(403).json({ message: "Acesso negado. Nenhuma função de usuário encontrada no token." });
+        }
+
+        if (allowedRoles.includes(userRole)) {
+
+            next();
+        } else {
+
+            return res.status(403).json({ message: "Acesso negado. Você não tem permissão para executar esta ação." });
+        }
+    };
+};
+
+module.exports = authorize;
+
+
+----------------
 
 backend/src/middleware/auth.js:
 
@@ -356,6 +385,11 @@ const User = sequelize.define('User', {
     senha: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    role: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'user'
     }
 
 },
@@ -483,12 +517,11 @@ router.post('/register',
 module.exports = router;
 ---------------
 
-backend/src/routes/userRoutes.js:
-
 const express = require('express');
 const userController = require('../controllers/userController');
 const { body, validationResult } = require('express-validator');
 const authMiddleware = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 
 const router = express.Router(); // Cria uma instância do roteador
 
@@ -622,12 +655,9 @@ router.put('/:id', authMiddleware, userController.updateUser);
  *     204:
  *     description: Usuário deletado com sucesso
  */
-router.delete('/:id', authMiddleware, userController.deleteUser);
+router.delete('/:id', authMiddleware, authorize(['admin']), userController.deleteUser);
 
 module.exports = router;
-
-
-
 
 ---------------
 

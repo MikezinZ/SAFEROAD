@@ -1,43 +1,40 @@
 TESTE do get
+---
+EXEMPLO DE REGISTRO:
 
+{
+    "nome": "Super Admin",
+    "email": "admin@example.com",
+    "senha": "adminpass123"
+}
 
-
-
-[
-    {
+---
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ0ZXN0ZS5ub3ZvQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDgyMzgxMDQsImV4cCI6MTc0ODMyNDUwNH0.qmlYulwnKb5qR6JY8ypyy-xvBBazaMrNKD-uZb3hC_0",
+    "user": {
         "id": 1,
-        "nome": "Mike",
-        "email": "mike@gmail.com"
-    },
-
-    {
-	"id": 4,
-    	"nome": "Miguelito",
-    	"email": "Miguelito10@gmail.com",
-    	"senha": "senha123"
-	"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiZW1haWwiOiJNaWd1ZWxpdG9AZ21haWwuY29tIiwiaWF0IjoxNzQ0MjAzNjUzLCJleHAiOjE3NDQyOTAwNTN9.1q1CsVtAA_lY4rlSevtXWosAAhg7rWHiyH4SYZBN1Jw",
-
-    {
-        "id": 5,
-        "username": "Diego Ximenes",
-        "email": "Diego@lindo.com",
-        "senha": "Senha123"
+        "nome": "Usuario Teste Novo",
+        "email": "teste.novo@example.com"
     }
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiZW1haWwiOiJEaWVnb0BsaW5kby5jb20iLCJpYXQiOjE3NDQyODgwMTksImV4cCI6MTc0NDM3NDQxOX0.234LoyzPTvx4M9MqvvEKRJAPTjvuv8wTnNBZUBVBMXo"
-}
-]
-
------
-após front
-{
-Matheus Brito
-Britinhozeca@gmail.com
-Arriba2020$
-Arriba2020$
 }
 
 {
-    MiguelHenrique
-    MiguelitoTeste@gmail.com
-    Senha123
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc0ODIzOTY2NSwiZXhwIjoxNzQ4MzI2MDY1fQ.yAPdqLbV8uh_ZaVoFxA-2xMG-S6HmX03v88bMndI0zs",
+    "user": {
+        "id": 2,
+        "nome": "Super Admin",
+        "email": "admin@example.com",
+        "senha": "adminpass123"
+    }
+}
+
+
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJsaXhvQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ4MjM5ODU3LCJleHAiOjE3NDgzMjYyNTd9.Lp8_V3-SmKT-FQIKGD_eggQ2G4TnJdVEGi5TUgfiWr8",
+    "user": {
+        "id": 3,
+        "username": "Lixo",
+        "email": "lixo@example.com"         APAGADO
+        "senha": "lixo123"
+    }
 }
