@@ -42,13 +42,15 @@ export const removeUser = (): void => {
   localStorage.removeItem('user');
 };
 
+const AUTH_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 // Auth operations
 export const login = async (
   email: string,
   password: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const response = await fetch('http://localhost:3000/api/auth/login', {
+    const response = await fetch('${AUTH_API_BASE_URL}/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -85,7 +87,7 @@ export const register = async (
   password: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const response = await fetch('http://localhost:3000/api/auth/register', {
+    const response = await fetch('${AUTH_API_BASE_URL}/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
