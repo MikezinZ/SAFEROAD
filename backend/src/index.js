@@ -14,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware para permitir requisições de diferentes origens
-const frontendURL = "https://saferoad-lime.vercel.app/"
+const frontendURL = "https://saferoad-lime.vercel.app"
 app.use(cors({ origin: frontendURL }));
 app.use(express.json());
 

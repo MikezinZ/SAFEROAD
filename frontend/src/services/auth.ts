@@ -50,7 +50,7 @@ export const login = async (
   password: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const response = await fetch('${AUTH_API_BASE_URL}/auth/login', {
+    const response = await fetch(`${AUTH_API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ export const register = async (
   password: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const response = await fetch('${AUTH_API_BASE_URL}/auth/register', {
+    const response = await fetch(`${AUTH_API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
