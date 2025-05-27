@@ -14,10 +14,10 @@ const LandingPage: React.FC = () => {
         padding: '0 20px'
       }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '20px' }}>
-          Aplicação React Simples
+          SAFEROAD
         </h1>
         <p style={{ fontSize: '1.2rem', marginBottom: '40px', color: '#555' }}>
-          Um frontend completo com autenticação e operações CRUD
+          Gestão de Usuários - CRUD
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
