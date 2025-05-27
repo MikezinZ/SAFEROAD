@@ -78,3 +78,16 @@ novo banco:
         "senha": "teste123"
     }
 }
+
+
+--------------------
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJyZHNfdGVzdGVAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODM4NzIzMywiZXhwIjoxNzQ4NDczNjMzfQ.P3tTCycAESJKC2bqKMn0iaAglpdIWMQQBXbXHu6d0ao",
+    "user": {
+        "id": 1,
+        "nome": "UsuarioNoRDS",
+        "email": "rds_teste@example.com",
+        "senha": "password123rds"
+    }
+}
+----------------------

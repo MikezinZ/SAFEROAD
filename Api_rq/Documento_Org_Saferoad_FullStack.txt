@@ -746,7 +746,6 @@ if (!dbUrl) {
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
-    protocol: 'postgres',
     dialectOptions: {
         ssl: {
             require: true,
@@ -764,8 +763,7 @@ backend/.env:
 
 JWT_SECRET=SafeCode_Code
 PORT=3000
-DATABASE_URL="postgresql://Saferoad_db_owner:npg_EZlo7Mfdpiq4@ep-shy-truth-a8vv327k-pooler.eastus2.azure.neon.tech/Saferoad_db?sslmode=require"
-
+DATABASE_URL="postgresql://saferoadadmin:MigPigrds10!@saferoad-db-instance.ctgq6awc2dce.us-east-2.rds.amazonaws.com:5432/saferoad_database"
 -------------------
 
 backend/package.json:
