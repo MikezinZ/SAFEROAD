@@ -16,11 +16,11 @@ SAFEROAD
  │ │   ├── routes/ [✓]
  │ │   │   ├── authRouter.js [✓]
  │ │   │   └── userRouter.js [✓]
- │ │   └── tests/ [✓]
- │ │       ├── auth.tests.js [✓]
- │ │       └── index.js [✓]
+ │ │   ├── tests/ [✓]
+ │ │   │   └── auth.tests.js [✓]
+ │ │   └── index.js [✓]
  │ ├── .env [✓]
- │ ├── databases.sqlite [✓]
+ │ ├── README.md [✓]
  │ ├── package-lock.json [✓]
  │ └── package.json [✓]
  ├── frontend/[✓]
@@ -33,6 +33,7 @@ ESTRUTURA DE CÓDIGO COMPLETA DE TODO BACKEND;
 -------------------
 
 backend/src/index.js:
+
 require('dotenv').config();
 
 // importaçãoa de módulos
@@ -49,7 +50,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware para permitir requisições de diferentes origens
-app.use(cors());
+const frontendURL = "https://saferoad-lime.vercel.app/"
+app.use(cors({ origin: frontendURL }));
 app.use(express.json());
 
 // configuração do swagger
@@ -126,7 +128,7 @@ backend/src/controllers/authController.js:
 const jwt = require("jsonwebtoken");
 const { User } = require('../models');
 
-const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta"; // Substitua pela sua chave secreta real
+const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta";
 
 
 // Controller de autenticação
@@ -193,6 +195,8 @@ module.exports = new AuthController();
 -----------
 
 backend/src/controller/userController.js:
+
+const { User } = require('../models');
 
 const { User } = require('../models');
 
@@ -324,7 +328,6 @@ const authorize = (allowedRoles) => {
 
 module.exports = authorize;
 
-
 ----------------
 
 backend/src/middleware/auth.js:
@@ -355,6 +358,7 @@ const authMiddleware = (req, res, next) => {
 module.exports = authMiddleware;
 
 -------------
+backend/src/models/index.js:
 
 const sequelize = require('../config/database');
 const User = require('./user');
@@ -526,6 +530,7 @@ router.post('/register',
 
 module.exports = router;
 ---------------
+backend/src/routes/userRoutes.js:
 
 const express = require('express');
 const userController = require('../controllers/userController');
@@ -726,10 +731,40 @@ describe('Endpoints de Autenticacao', () => {
 
 ---------------
 
+backend/src/config/database.js:
+
+require('dotenv').config();
+const { Sequelize } = require('sequelize');
+
+const dbUrl = process.env.DATABASE_URL;
+
+if (!dbUrl) {
+    const errorMessage = "ERRO CRÍTICO: DATABASE_URL não está definida nas variáveis de ambiente! O servidor não pode iniciar sem ela.";
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+}
+
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    protocol: 'postgres',
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    },
+    logging: false
+});
+
+module.exports = sequelize;
+
+--------------
+
 backend/.env:
 
 JWT_SECRET=SafeCode_Code
 PORT=3000
+DATABASE_URL="postgresql://Saferoad_db_owner:npg_EZlo7Mfdpiq4@ep-shy-truth-a8vv327k-pooler.eastus2.azure.neon.tech/Saferoad_db?sslmode=require"
 
 -------------------
 
@@ -756,8 +791,9 @@ backend/package.json:
     "express": "^4.21.2",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.0",
+    "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.6",
-    "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.0.0",
     "swagger-ui-express": "^5.0.1"
   },
@@ -1688,7 +1724,7 @@ export async function deleteUser(id: string): Promise<ApiResponse<{ success: boo
 
 ---------------------
 
-frontend/src/services/auth.ts
+frontend/src/services/auth.ts:
 interface User {
   id: string;
   username: string;
