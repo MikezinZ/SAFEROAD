@@ -1,7 +1,3 @@
-Com certeza! Preparei o `README.md` completo para o seu projeto SAFEROAD, incorporando emojis para deixá-lo mais humano e convidativo, e seguindo a estrutura que você forneceu.
-
----
-
 # 🛣️ SAFEROAD Project
 
 Bem-vindo ao projeto SAFEROAD! Este repositório é dedicado à gestão de usuários e autenticação da nossa plataforma. 🚀 Desenvolvemos uma **API robusta e completa** para o gerenciamento eficiente de usuários, incorporando autenticação segura via JWT. Todo o desenvolvimento seguiu o **padrão MVC (Model-View-Controller)** e aderiu às melhores práticas de desenvolvimento de software, garantindo um código organizado, manutenível e escalável.
@@ -200,4 +196,4 @@ Este projeto é distribuído sob a **licença MIT**. Para obter mais detalhes, c
 * Lewi Gabriel
 * Lucas Maciel
 
-Desenvolvido com carinho pela equipe SafeRoad - 2025. 💙
+
