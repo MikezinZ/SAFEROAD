@@ -1,7 +1,3 @@
-Com certeza! Vamos estruturar e aprimorar este documento para que ele fique ainda mais claro e profissional.
-
----
-
 # SAFEROAD: Visão Geral do Backend 🚀
 
 Este documento detalha as funcionalidades, tecnologias e a estrutura de código do backend da aplicação SAFEROAD, responsável pela gestão de usuários e autenticação.
@@ -141,7 +137,6 @@ backend/
 
 Esta estrutura separa claramente as responsabilidades (configuração, controle, modelos, rotas, *middlewares*, testes), aderindo a princípios como o MVC (*Model-View-Controller*) e facilitando o desenvolvimento e a colaboração em equipe.
 
----
 
 **GRUPO SAFEROAD**
 **Integrantes:**
