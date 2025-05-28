@@ -1,127 +1,124 @@
-## Funcionalidades Detalhadas do Frontend SAFEROAD 🚀
+# 🛣️ SAFEROAD: Frontend da Aplicação
 
-O frontend do SAFEROAD é uma **aplicação React construída com TypeScript**, que oferece uma interface de usuário intuitiva para autenticação e operações CRUD (Criar, Ler, Atualizar, Deletar) de dados de usuários. Ele foi cuidadosamente projetado para ser responsivo e proporcionar um feedback claro ao usuário.
+Bem-vindo ao frontend do projeto SAFEROAD! Esta é uma aplicação React moderna, construída com Vite e TypeScript, projetada para interagir com a API backend SAFEROAD. Ela oferece uma interface de usuário intuitiva para autenticação, gerenciamento de dados de usuários com operações CRUD e paginação.
 
----
-
-### 1. Autenticação de Usuários 🔐
-
-Tudo começa com a segurança! A autenticação garante que apenas usuários permitidos acessem os recursos protegidos.
-
-* **Registro de Usuários** 📝 (`RegisterForm.tsx`, `RegisterPage.tsx`, `auth.ts`):
-    * Permite que novos usuários criem uma conta com **nome de usuário, e-mail e senha**.
-    * Possui **validação no lado do cliente** ✅ para garantir que o e-mail seja válido, a senha tenha no mínimo 6 caracteres e que as senhas digitadas combinem.
-    * Envia os dados para o backend via `POST` para o endpoint `/api/auth/register`.
-    * Após o sucesso, o usuário é **redirecionado para a página de login** ➡️.
-* **Login de Usuários** 🔑 (`LoginForm.tsx`, `LoginPage.tsx`, `auth.ts`):
-    * Permite que usuários existentes se autentiquem usando seu **e-mail e senha**.
-    * Também tem **validação no lado do cliente** ✅ para e-mail e senha.
-    * Envia as credenciais para o backend via `POST` para o endpoint `/api/auth/login`.
-    * Se o login for bem-sucedido, o **JWT (JSON Web Token) é armazenado no *local storage*** 💾, junto com as informações básicas do usuário.
-    * Os usuários são então **redirecionados para a página inicial** 🏠.
-* **Contexto de Autenticação** 🌐 (`AuthContext.tsx`):
-    * Gerencia o **estado de autenticação globalmente** na aplicação.
-    * Oferece funções para `login`, `register` e `logout`.
-    * Controla os **dados do usuário atual, status de login, estados de carregamento e quaisquer erros** 🐞 relacionados à autenticação.
-    * Inicializa o estado de autenticação ao carregar a aplicação, verificando se há um token existente.
-* **Funcionalidade de Logout** 👋 (`NavBar.tsx`, `auth.ts`):
-    * Permite que usuários autenticados **façam logout**, removendo o JWT e os dados do usuário do *local storage*.
-    * Após o logout, o usuário é geralmente **redirecionado de volta para a página de *landing*** ou de login.
-* **Proteção de Rotas** 🛡️ (`HomePage.tsx`, `LoginPage.tsx`, `RegisterPage.tsx`, `App.tsx`):
-    * A `HomePage` é **protegida**, ou seja, usuários não autenticados são automaticamente redirecionados para a página de login.
-    * Por outro lado, as páginas de `Login` e `Registro` **redirecionam usuários já autenticados para a `HomePage`**, evitando acesso desnecessário.
+Atualmente, este frontend está hospedado na **Vercel** e se comunica com o backend serverless na AWS.
 
 ---
 
-### 2. Gerenciamento de Usuários (Operações CRUD) 🛠️
+## ✨ Funcionalidades Principais
 
-Na `HomePage`, usuários autenticados podem gerenciar os dados de outros usuários através de uma interface CRUD.
+O frontend SAFEROAD foi desenvolvido para proporcionar uma experiência de usuário completa e segura:
 
-* **Exibição de Usuários com Paginação** 📚 (`CrudOperations.tsx`, `api.ts`):
-    * Busca a lista de usuários do backend (`/api/users`).
-    * Implementa **paginação** para uma exibição eficiente, permitindo navegar entre as páginas de forma fluida.
-    * Usuários são mostrados em uma **tabela** com nome e e-mail.
-    * Inclui **indicadores de carregamento** ⏳ e **tratamento de erros** 🚫 para uma melhor experiência.
-* **Criação de Usuários** ✨ (`CrudOperations.tsx`, `api.ts`):
-    * Um formulário intuitivo para **criar novas contas de usuário**.
-    * Campos para **nome, e-mail e senha**.
-    * Envia os dados para o backend via `POST` (`/api/users`).
-    * Exibe **mensagens de sucesso** 🎉 ou **erro** 👎 ao usuário.
-* **Atualização de Usuários** ✍️ (`CrudOperations.tsx`, `api.ts`):
-    * Botão "Editar" para cada usuário na tabela. Ao clicar, o formulário é preenchido com os dados do usuário, permitindo **modificar nome e e-mail**.
-    * A senha não é editável diretamente por segurança.
-    * Envia os dados atualizados para o backend via `PUT` (`/api/users/{id}`).
-    * Mostra **mensagens de sucesso** ou **erro**, e a lista é atualizada automaticamente.
-* **Exclusão de Usuários** 🗑️ (`CrudOperations.tsx`, `api.ts`):
-    * Botão "Deletar" para cada usuário.
-    * Solicita **confirmação** antes de excluir para evitar acidentes.
-    * Envia a requisição de exclusão para o backend via `DELETE` (`/api/users/{id}`).
-    * Exibe **mensagens de sucesso** ou **erro**, e a lista é atualizada. Gerencia também a paginação se o último item da página for deletado.
-* **Tratamento de Estado e Feedback Visual** 💬 (`CrudOperations.tsx`):
-    * Gerencia os estados de formulário, lista de usuários, carregamento, erros e mensagens de sucesso.
-    * Mensagens de sucesso desaparecem automaticamente após 3 segundos, para uma experiência fluida.
+* **Autenticação Robusta:**
+    * Formulários de Registro e Login com validação no lado do cliente.
+    * Comunicação segura com os endpoints `/api/auth/register` e `/api/auth/login` do backend.
+    * Armazenamento seguro de JWT (JSON Web Token) no *local storage* após login bem-sucedido.
+    * Gerenciamento de estado de autenticação global via React Context API (`AuthContext.tsx`).
+    * Funcionalidade de Logout clara e eficiente.
+* **Proteção de Rotas:**
+    * Páginas sensíveis (como o painel de gerenciamento) são acessíveis apenas para usuários autenticados.
+    * Redirecionamento automático para usuários não autenticados ou para usuários já logados tentando acessar páginas de login/registro.
+* **Gerenciamento de Usuários (CRUD) com Paginação:**
+    * Interface para listar usuários com paginação, buscando dados do endpoint `/api/users`.
+    * Formulários para criar novos usuários (enviando para `POST /api/users`).
+    * Funcionalidade para editar dados de usuários existentes (enviando para `PUT /api/users/:id`).
+    * Opção para deletar usuários (enviando para `DELETE /api/users/:id`), com confirmação e respeitando as permissões de *role* (administrador) definidas no backend.
+* **Experiência do Usuário:**
+    * Feedback visual claro com indicadores de carregamento e mensagens de sucesso/erro.
+    * Navegação intuitiva através de uma barra de navegação responsiva ao estado de autenticação.
+    * Layout limpo e organizado.
 
 ---
 
-### 3. Navegação e Layout 🗺️
+## 💻 Tecnologias Utilizadas no Frontend
 
-Uma estrutura de navegação clara e um layout limpo para facilitar o uso.
-
-* **Barra de Navegação** 🧭 (`NavBar.tsx`):
-    * No topo da página, oferece **links essenciais**: "SAFEROAD" (página de *landing*), "Início" (para usuários logados), "Login" e "Registre-se" (para quem não está logado).
-    * Os links se **adaptam dinamicamente** ao status de autenticação do usuário.
-    * Inclui um prático botão "Sair" para logout.
-* **Roteamento** 🚦 (`App.tsx`):
-    * Define as rotas da aplicação usando `react-router-dom`: `/` (landing), `/login`, `/register` e `/home`.
-    * Possui uma rota curinga (`*`) que redireciona para a página de *landing* para URLs desconhecidas.
-* **Páginas Dedicadas** 📄 (`LandingPage.tsx`, `LoginPage.tsx`, `RegisterPage.tsx`, `HomePage.tsx`):
-    * Cada funcionalidade principal tem sua própria página, organizando os componentes e a lógica de forma clara.
-    * A `LandingPage` é a porta de entrada, convidando à exploração ou ao login/registro.
-* **Estilização Global** 🎨 (`index.css`, `tailwind.config.js`, `postcss.config.js`):
-    * Define estilos CSS básicos e utilitários para uma aparência consistente.
-    * Usa um reset CSS para padronizar o visual em diferentes navegadores.
-    * As configurações de PostCSS e Tailwind CSS sugerem a flexibilidade para uma futura integração de estilos mais avançados.
+* **Core:** React, TypeScript, Vite
+* **Roteamento:** React Router DOM (`react-router-dom`)
+* **Chamadas API:** Fetch API (nativa do navegador, utilizada dentro dos serviços)
+* **Gerenciamento de Estado Global:** React Context API
+* **Estilização:** CSS puro (com `index.css` para estilos globais e potencial para CSS Modules ou outras abordagens). *(Se você usou Tailwind de forma mais proeminente, mencione aqui).*
+* **Linting:** ESLint com plugins para React e TypeScript.
+* **Build Tool:** Vite
 
 ---
 
-### 4. Integração com o Backend 🔗
+## 🛠️ Como Executar o Frontend Localmente
 
-Os arquivos na pasta `services` são a ponte entre o frontend e o backend.
+Siga os passos abaixo para configurar e executar o frontend em seu ambiente de desenvolvimento.
 
-* **`api.ts`**:
-    * Centraliza todas as requisições HTTP para as operações CRUD.
-    * A função `apiRequest` padroniza as requisições, adicionando cabeçalhos como `Content-Type` e o **token de autorização (JWT)** automaticamente.
-    * Oferece funções auxiliares como `getUsers`, `createUser`, `updateUser` e `deleteUser`, simplificando a comunicação com a API.
-    * Contém um **tratamento de erros genérico** para falhas de rede ou respostas da API.
-* **`auth.ts`**:
-    * Gerencia o **armazenamento e a recuperação do token JWT e dos dados do usuário** no *local storage*.
-    * Contém as funções `login` e `register` que interagem diretamente com os endpoints de autenticação do backend.
-    * Fornece funções para verificar se o usuário está autenticado (`isAuthenticated`) e para realizar o `logout`.
+### 1. Pré-requisitos
 
----
+* **Node.js:** Versão 18.x ou superior.
+* **npm:** (geralmente incluído no Node.js).
+* **Git:** Para clonar o repositório.
 
-### 5. Ferramentas e Configurações de Desenvolvimento ⚙️
+### 2. Instalação
 
-O projeto também vem com um conjunto de ferramentas para otimizar o desenvolvimento e garantir a qualidade do código.
+```bash
+# Navegue até a pasta do frontend a partir da raiz do projeto
+cd frontend/
 
-* **Variáveis de Ambiente** 🌍 (`.env`):
-    * Permite configurar variáveis de ambiente, como a **URL da API do backend (`VITE_API_URL`)**, facilitando a mudança entre ambientes de desenvolvimento e produção.
-* **Linter e Formatter** 🧹 (`eslint.config.js`, `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`):
-    * Utiliza **ESLint com TypeScript** para manter a qualidade do código, identificar erros e garantir um estilo consistente.
-    * As configurações de TypeScript garantem a tipagem correta e um ambiente de desenvolvimento robusto.
-* **Vite** ⚡:
-    * O projeto usa Vite, um **empacotador de frontend ultrarrápido**, otimizando tanto o desenvolvimento quanto o processo de *build*.
-* **`.gitignore` e `package.json`** 📦:
-    * O `.gitignore` garante que arquivos desnecessários ou sensíveis não sejam versionados.
-    * O `package.json` lista todas as dependências e *scripts* de desenvolvimento (como `dev` para iniciar o servidor de desenvolvimento).
+# Instale todas as dependências
+npm install
+3. Configuração das Variáveis de Ambiente
+Crie um arquivo chamado .env na raiz do diretório frontend/. Este arquivo é usado para configurar a URL da API backend que o frontend irá consumir.
 
----
+Conteúdo do .env para desenvolvimento local:
 
-Este frontend do SAFEROAD é uma aplicação React robusta, focada em **segurança na autenticação**, **gestão de dados via CRUD** e uma **experiência de usuário impecável** com validações, feedback visual e navegação intuitiva.
+Snippet de código
 
+VITE_API_URL=http://localhost:3000/api
+Isso fará com que o frontend local se conecte ao seu backend rodando localmente na porta 3000.
+Para conectar ao backend na nuvem (AWS API Gateway), você alteraria este valor para a Invoke URL do seu API Gateway (ex: https://SUA_API_ID.execute-api.SUA_REGIAO.amazonaws.com/SEU_STAGE/api).
+4. Execução
+Para desenvolvimento (com Hot Module Replacement):
 
-GRUPO SAFEROAD
-- Diego Ximenes
-- Lewi Gabriel 
-- Lucas Maciel 
-- Miguel Henrique
+Bash
+
+npm run dev
+A aplicação frontend estará disponível geralmente em http://localhost:5173 (o Vite informa a porta exata no terminal).
+
+Para construir a versão de produção:
+
+Bash
+
+npm run build
+Os arquivos otimizados para produção serão gerados na pasta dist/.
+
+📁 Estrutura do Projeto Frontend
+O frontend da aplicação SAFEROAD foi organizado de forma modular para facilitar a manutenção e o desenvolvimento:
+
+frontend/
+├── node_modules/       # 📦 Dependências do projeto
+├── public/             # 🖼️ Arquivos estáticos públicos (ex: favicon.ico)
+├── src/                # 📝 Código-fonte principal
+│   ├── components/     # 🧩 Componentes React reutilizáveis (LoginForm, NavBar, CrudOperations, etc.)
+│   ├── contexts/       # 🌐 Context API para estado global (AuthContext.tsx)
+│   ├── pages/          # 📄 Componentes de nível de página (HomePage, LoginPage, etc.)
+│   ├── services/       # 📡 Módulos para interação com a API backend (api.ts, auth.ts)
+│   ├── App.tsx         # 🌳 Componente raiz da aplicação (define rotas)
+│   ├── index.css       # 🎨 Estilos CSS globais
+│   ├── main.tsx        # 🚀 Ponto de entrada da aplicação React
+│   └── vite-env.d.ts   # 🏷️ Declarações de tipo para variáveis de ambiente Vite
+├── .env                # 🔑 Arquivo para variáveis de ambiente (local, NÃO versionado)
+├── .gitignore          # 🚫 Arquivos e pastas ignorados pelo Git
+├── index.html          # 🚪 Ponto de entrada HTML para a aplicação Vite
+├── package-lock.json   # 🔒 Lockfile de dependências
+├── package.json        # 📄 Metadados do projeto, scripts e dependências
+├── postcss.config.js   # 🖌️ Configuração do PostCSS (se usado, ex: com Tailwind)
+├── tailwind.config.js  # 💨 Configuração do Tailwind CSS (se usado)
+├── tsconfig.json       # ⚙️ Configurações do TypeScript
+└── vite.config.ts      # ⚡ Configurações do Vite (build tool)
+Essa estrutura visa promover a clareza, manutenibilidade e separação de responsabilidades, utilizando componentes reutilizáveis, uma camada de serviços dedicada para a lógica de API, e gerenciamento de estado global com Context API.
+
+🔗 Integração com o Backend
+A comunicação com o backend é gerenciada pelos módulos em src/services/:
+
+api.ts: Contém a função apiRequest genérica que padroniza as chamadas fetch, incluindo automaticamente o token JWT nos cabeçalhos Authorization para rotas protegidas. Também exporta funções específicas para as operações CRUD de usuários (getUsers, createUser, etc.).
+auth.ts: Lida com as chamadas específicas para os endpoints de autenticação (/api/auth/login, /api/auth/register) e gerencia o armazenamento/remoção do token JWT e dos dados do usuário no localStorage do navegador.
+👨‍💻 Grupo SAFEROAD
+Diego Ximenes
+Lewi Gabriel
+Lucas Maciel
+Miguel Henrique

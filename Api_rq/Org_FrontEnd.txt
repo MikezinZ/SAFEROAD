@@ -1,0 +1,1355 @@
+
+SAFEROAD
+ │ Frontend (pendente)
+ │ ├── node_modules/ [✓]
+ │ ├── src/ [✓]
+ │ │   ├── components/ [✓]
+ │ │   │   ├──  CrudOperations.tsx [✓]
+ │ │   │   ├──  LoginForm.tsx [✓]
+ │ │   │   ├──  NavBar.tsx [✓]
+ │ │   │   └──  RegisterForm.tsx [✓]
+ │ │   ├── contexts/ [✓]
+ │ │   │   └── AuthContext.tsx/ [✓]
+ │ │   ├── pages/ [✓]
+ │ │   │   ├──  HomePage.tsx [✓]
+ │ │   │   ├──  LandingPage.tsx [✓]
+ │ │   │   ├──  LoginPage.tsx [✓]
+ │ │   │   └──  RegisterPage.tsx [✓]
+ │ │   ├── services/ [✓]
+ │ │   │   ├── api.ts [✓]
+ │ │   │   └── auth.js [✓]
+ │ │   ├── App.tsx [✓]
+ │ │   ├── Index.css[✓]
+ │ │   ├── main.tsx[✓]
+ │ │   └── vite-env.d.ts[✓]
+ │ ├── .env[✓]
+ │ ├── .gitignore [✓]
+ │ ├── eslint.config.js [✓]
+ │ ├── index.html [✓]
+ │ ├── postcss.config.js [✓]
+ │ ├── tailwind.config.js [✓]
+ │ ├── tsconfig.app.json [✓]
+ │ ├── tsconfig.json [✓]
+ │ ├── tsconfig.node.json [✓]
+ │ ├── package-lock.json [✓]
+ │ └── package.json [✓]
+ ├── backend/[✓]
+ ├── .gitattributes [✓]
+ ├── project.txt [✓]
+ └── README.md [✓]
+
+ESTRUTURA DE CÓDIGO COMPLETA DE TODO FRONTEND;
+
+---------------------------
+
+frontend/src/components/CrudOperations.tsx:
+
+import React, { useState, useEffect } from 'react';
+import { getUsers, createUser, updateUser, deleteUser } from '../services/api';
+
+interface User {
+  id: string;
+  nome: string;
+  email: string;
+  [key: string]: any;
+}
+
+const CrudOperations: React.FC = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<Partial<User>>({ nome: '', email: '' });
+  const [password, setPassword] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
+
+
+  useEffect(() => {
+    fetchUsers(1); // Sempre busca a primeira página ao montar o componente
+  }, []);
+
+  const fetchUsers = async (pageToFetch: number = 1) => {
+    setLoading(true);
+    setError(null);
+    const response = await getUsers<any>(`?page=${pageToFetch}&limit=${itemsPerPage}`);
+
+    if (response.error) {
+      setError(response.error);
+      setUsers([]);
+      setTotalPages(0);
+      setTotalItems(0);
+    } else if (response.data) {
+      setUsers(response.data.users);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.currentPage);
+      setTotalItems(response.data.totalItems);
+    }
+    setLoading(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setCurrentUser({ ...currentUser, [name]: value });
+  };
+
+  const resetForm = () => {
+    setCurrentUser({ nome: '', email: '' });
+    setPassword('')
+    setIsEditing(false);
+  };
+
+  const showSuccessMessage = (message: string) => {
+    setSuccess(message);
+    setTimeout(() => setSuccess(null), 3000);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    if (isEditing && currentUser.id) {
+      if (!currentUser.nome || !currentUser.email) {
+        setError('Nome e Email são obrigatórios');
+        setLoading(false);
+        return;
+      }
+
+      const dataToUpdate = { nome: currentUser.nome, email: currentUser.email };
+      const response = await updateUser<User>(currentUser.id, dataToUpdate);
+
+      if (!response.error) {
+        setUsers(users.map(user =>
+          user.id === currentUser.id ? { ...user, ...dataToUpdate } : user
+        ));
+        showSuccessMessage('Usuário atualizado com sucesso!');
+        resetForm();
+        fetchUsers(currentPage);
+      } else {
+        setError(response.error ?? 'Ocorreu um erro ao atualizar.')
+      }
+    } else {
+      if (!currentUser.nome || !currentUser.email || !password) {
+        setError('Nome, Email e Senha são obrigatórios');
+        setLoading(false);
+        return
+      }
+      const dataToCreate = {
+        nome: currentUser.nome,
+        email: currentUser.email,
+        senha: password
+      };
+      const response = await createUser<User>(dataToCreate);
+
+      if (!response.error && response.data) {
+        fetchUsers(1);
+        showSuccessMessage('Usuário criado com sucesso!');
+        resetForm();
+      } else {
+        setError(response.error ?? 'Ocorreu um erro ao criar o usuário.');
+      }
+    }
+    setLoading(false);
+  };
+
+  const handleEdit = (user: User) => {
+    setCurrentUser(user);
+    setIsEditing(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja deletar este usuário?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const response = await deleteUser(id);
+
+    if (response.error) {
+      setError(response.error);
+    } else {
+      setUsers(users.filter(user => user.id !== id));
+      showSuccessMessage('Usuário deletado com sucesso!');
+      if (users.length === 1 && currentPage > 1) { // Se era o último item de uma página que não é a primeira
+        fetchUsers(currentPage - 1);
+      } else {
+        fetchUsers(currentPage); // Recarrega a página atual
+      }
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div className="card">
+      <h2 style={{ marginBottom: '20px' }}>
+        {isEditing ? 'Editar Usuário' : 'Criar Novo Usuário'}
+      </h2>
+
+      {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="nome">Nome</label>
+          <input
+            type="text"
+            id="nome"
+            name="nome"
+            className="form-control"
+            value={currentUser.nome || ''}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            className="form-control"
+            value={currentUser.email || ''}
+            onChange={handleInputChange}
+          />
+        </div>
+        {!isEditing && (
+          <div className="form-group">
+            <label htmlFor="password">Senha</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              className="form-control"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        )}
+
+        <div className="form-group" style={{ display: 'flex', gap: '10px' }}>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Processing...' : isEditing ? 'Update' : 'Create'}
+          </button>
+
+          {isEditing && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={resetForm}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+
+      <h2 style={{ margin: '30px 0 20px' }}>Lista de Usuários</h2>
+
+      {loading && <p>Carregando...</p>}
+
+      {users.length === 0 && !loading ? (
+        <p>Nenhum usuário encontrado!</p>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              <tr key={user.id}>
+                <td>{user.nome}</td>
+                <td>{user.email}</td>
+                <td className="action-buttons">
+                  <button
+                    onClick={() => handleEdit(user)}
+                    className="btn btn-secondary"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(user.id)}
+                    className="btn btn-danger"
+                  >
+                    Deletar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {/* CONTROLES DE PAGINAÇÃO */}
+      {totalPages > 0 && (
+        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            onClick={() => fetchUsers(currentPage - 1)}
+            disabled={currentPage <= 1 || loading}
+            className="btn btn-secondary"
+          >
+            Anterior
+          </button>
+          <span>
+            Página {currentPage} de {totalPages} (Total de itens: {totalItems})
+          </span>
+          <button
+            onClick={() => fetchUsers(currentPage + 1)}
+            disabled={currentPage >= totalPages || loading}
+            className="btn btn-secondary"
+          >
+            Próxima
+          </button>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default CrudOperations;
+
+------------------------
+
+frontend/src/components/LoginForm.tsx;
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+
+const LoginForm: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+
+  const { login, error, clearError } = useAuth();
+  const navigate = useNavigate();
+
+  const validateForm = (): boolean => {
+    const errors: { email?: string; password?: string } = {};
+    let isValid = true;
+
+    if (!email) {
+      errors.email = 'Email é obrigatório';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email inválido';
+      isValid = false;
+    }
+
+    if (!password) {
+      errors.password = 'Senha é obrigatória';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const success = await login(email, password);
+    if (success) {
+      navigate('/home');
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2 style={{ marginBottom: '20px' }}>Login</h2>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            className="form-control"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {formErrors.email && <div className="error-message">{formErrors.email}</div>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Senha</label>
+          <input
+            type="password"
+            id="password"
+            className="form-control"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {formErrors.password && <div className="error-message">{formErrors.password}</div>}
+        </div>
+
+        <div className="form-group">
+          <button type="submit" className="btn btn-primary">Login</button>
+        </div>
+
+        <div>
+          Não tem uma conta? <Link to="/register">Registre-se</Link>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default LoginForm;
+
+-----------------------------------
+
+frontend/src/components/NavBar.tsx:
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const Navbar: React.FC = () => {
+  const { isLoggedIn, logout } = useAuth();
+
+  return (
+    <nav className="navbar">
+      <div className="container">
+        <Link to="/" className="navbar-brand">SAFEROAD</Link>
+
+        <ul className="navbar-nav">
+          {isLoggedIn ? (
+            <>
+              <li>
+                <Link to="/home" className="nav-link">Início</Link>
+              </li>
+              <li>
+                <button
+                  onClick={logout}
+                  className="btn btn-secondary"
+                  style={{ marginLeft: '10px' }}
+                >
+                  Sair
+                </button>
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <Link to="/login" className="nav-link">Login</Link>
+              </li>
+              <li>
+                <Link to="/register" className="nav-link">Registre-se</Link>
+              </li>
+            </>
+          )}
+        </ul>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;
+
+-----------------------
+
+frontend/src/components/RegisterForm.tsx:
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+
+const RegisterForm: React.FC = () => {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formErrors, setFormErrors] = useState<{
+    username?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+
+  const { register, error, clearError } = useAuth();
+  const navigate = useNavigate();
+
+  const validateForm = (): boolean => {
+    const errors: {
+      username?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
+    let isValid = true;
+
+    if (!username) {
+      errors.username = 'Nome de usuário é obrigatório';
+      isValid = false;
+    }
+
+    if (!email) {
+      errors.email = 'Email é obrigatório';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email inválido';
+      isValid = false;
+    }
+
+    if (!password) {
+      errors.password = 'Senha é obrigatória';
+      isValid = false;
+    } else if (password.length < 6) {
+      errors.password = 'A senha deve ter pelo menos 6 caracteres';
+      isValid = false;
+    }
+
+    if (password !== confirmPassword) {
+      errors.confirmPassword = 'As senhas não correspondem';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const success = await register(username, email, password);
+    if (success) {
+      navigate('/login');
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2 style={{ marginBottom: '20px' }}>Registre-se</h2>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="username">Nome de Usuário</label>
+          <input
+            type="text"
+            id="username"
+            className="form-control"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          {formErrors.username && <div className="error-message">{formErrors.username}</div>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            className="form-control"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {formErrors.email && <div className="error-message">{formErrors.email}</div>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Senha</label>
+          <input
+            type="password"
+            id="password"
+            className="form-control"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {formErrors.password && <div className="error-message">{formErrors.password}</div>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="confirmPassword">Confirme a sua senha</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            className="form-control"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          {formErrors.confirmPassword && (
+            <div className="error-message">{formErrors.confirmPassword}</div>
+          )}
+        </div>
+
+        <div className="form-group">
+          <button type="submit" className="btn btn-primary">Register</button>
+        </div>
+
+        <div>
+          Já possui uma conta? <Link to="/login">Login</Link>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default RegisterForm;
+
+------------------------------
+
+frontend/src/contexts/AuthContext.tsx:
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getUser, isAuthenticated, login, logout, register } from '../services/auth';
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  isLoggedIn: boolean;
+  loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (username: string, email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  clearError: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize auth state
+  useEffect(() => {
+    const initAuth = () => {
+      if (isAuthenticated()) {
+        const userData = getUser();
+        setUser(userData);
+      }
+      setLoading(false);
+    };
+
+    initAuth();
+  }, []);
+
+  const handleLogin = async (email: string, password: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    const result = await login(email, password);
+    
+    if (!result.success) {
+      setError(result.error || 'Login failed');
+      setLoading(false);
+      return false;
+    }
+
+    setUser(getUser());
+    setLoading(false);
+    return true;
+  };
+
+  const handleRegister = async (
+    username: string,
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+
+    const result = await register(username, email, password);
+    
+    if (!result.success) {
+      setError(result.error || 'Registration failed');
+      setLoading(false);
+      return false;
+    }
+
+    setLoading(false);
+    return true;
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUser(null);
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
+
+  const value = {
+    user,
+    isLoggedIn: !!user,
+    loading,
+    error,
+    login: handleLogin,
+    register: handleRegister,
+    logout: handleLogout,
+    clearError,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+-----------------------
+
+frontend/src/pages/HomePage.tsx:
+import React from 'react';
+import CrudOperations from '../components/CrudOperations';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const HomePage: React.FC = () => {
+  const { isLoggedIn, user } = useAuth();
+
+  if (!isLoggedIn) {
+    return <Navigate to="/login" />;
+  }
+
+  return (
+    <div className="container" style={{ margin: '40px auto' }}>
+      <div style={{ marginBottom: '30px' }}>
+        <h1>Bem Vindo, {user?.username}!</h1>
+        <p>Este é o seu painel onde você pode gerenciar seus itens.</p>
+      </div>
+
+      <CrudOperations />
+    </div>
+  );
+};
+
+export default HomePage;
+
+---------------------------
+
+frontend/src/pages/LandingPage.tsx:
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const LandingPage: React.FC = () => {
+  const { isLoggedIn } = useAuth();
+
+  return (
+    <div className="container">
+      <div style={{
+        textAlign: 'center',
+        maxWidth: '800px',
+        margin: '80px auto',
+        padding: '0 20px'
+      }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '20px' }}>
+          Aplicação React Simples
+        </h1>
+        <p style={{ fontSize: '1.2rem', marginBottom: '40px', color: '#555' }}>
+          Um frontend completo com autenticação e operações CRUD
+        </p>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          {isLoggedIn ? (
+            <Link to="/home" className="btn btn-primary">
+              Ir para o painel
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="btn btn-primary">
+                Login
+              </Link>
+              <Link to="/register" className="btn btn-secondary">
+                Registre-se
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LandingPage;
+
+------------------------
+
+frontend/src/pages/LoginPage.tsx:
+import React from 'react';
+import LoginForm from '../components/LoginForm';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const LoginPage: React.FC = () => {
+  const { isLoggedIn } = useAuth();
+
+  if (isLoggedIn) {
+    return <Navigate to="/home" />;
+  }
+
+  return (
+    <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Bem vindo de volta!</h1>
+      <LoginForm />
+    </div>
+  );
+};
+
+export default LoginPage;
+
+---------------------
+
+frontend/src/pages/RegisterPage.tsx:
+import React from 'react';
+import RegisterForm from '../components/RegisterForm';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const RegisterPage: React.FC = () => {
+  const { isLoggedIn } = useAuth();
+
+  if (isLoggedIn) {
+    return <Navigate to="/home" />;
+  }
+
+  return (
+    <div className="container" style={{ maxWidth: '500px', margin: '40px auto' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>Crie sua conta</h1>
+      <RegisterForm />
+    </div>
+  );
+};
+
+export default RegisterPage;
+
+------------------------------
+
+frontend/src/services/api.ts:
+
+import { getToken } from './auth';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+interface ApiResponse<T> {
+  data?: T;
+  error?: string;
+}
+
+export async function apiRequest<T>(
+  endpoint: string,
+  method: string = 'GET',
+  data?: any
+): Promise<ApiResponse<T>> {
+  const token = getToken();
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      ...(data ? { body: JSON.stringify(data) } : {})
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      return { error: responseData.message || 'Algo deu errado' };
+    }
+
+    return { data: responseData };
+  } catch (error) {
+    console.error('Falha na solicitação da API:', error);
+    return { error: 'Erro de rede. Tente novamente.' };
+  }
+}
+
+// Common CRUD operations
+
+// O backend retorna um array de usuários
+export async function getUsers<T>(queryParams: string = ''): Promise<ApiResponse<T>> { // Aceita queryParams
+  return apiRequest<T>(`/users${queryParams}`); // Concatena queryParams
+}
+
+// O backend cria um usuário
+export async function createUser<T>(data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>('/users', 'POST', data);
+}
+
+// O backend atualiza um usuário
+export async function updateUser<T>(id: string, data: Partial<T>): Promise<ApiResponse<T>> {
+  return apiRequest<T>(`/users/${id}`, 'PUT', data);
+}
+
+// O backend deleta um usuário
+export async function deleteUser(id: string): Promise<ApiResponse<{ success: boolean }>> {
+  return apiRequest<{ success: boolean }>(`/users/${id}`, 'DELETE');
+}
+
+---------------------
+
+frontend/src/services/auth.ts:
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}
+
+interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+// Token management
+export const getToken = (): string | null => {
+  return localStorage.getItem('auth_token');
+};
+
+export const setToken = (token: string): void => {
+  localStorage.setItem('auth_token', token);
+};
+
+export const removeToken = (): void => {
+  localStorage.removeItem('auth_token');
+};
+
+// User management
+export const getUser = (): User | null => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch (error) {
+    console.error('Failed to parse user data', error);
+    return null;
+  }
+};
+
+export const setUser = (user: User): void => {
+  localStorage.setItem('user', JSON.stringify(user));
+};
+
+export const removeUser = (): void => {
+  localStorage.removeItem('user');
+};
+
+const AUTH_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+// Auth operations
+export const login = async (
+  email: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const response = await fetch(`${AUTH_API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, senha: password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.message || 'Falha no Login' };
+    }
+
+    // Store auth data
+    setToken(data.token);
+    const userData = {
+      id: data.user.id,
+      username: data.user.nome, // Convertendo 'nome' para 'username'
+      email: data.user.email,
+    };
+    setUser(userData);
+
+
+    return { success: true };
+  } catch (error) {
+    console.error('Falha no Login: ', error);
+    return { success: false, error: 'Erro de rede. Tente novamente.' };
+  }
+};
+
+export const register = async (
+  username: string,
+  email: string,
+  password: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const response = await fetch(`${AUTH_API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ nome: username, email, senha: password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.message || 'O registro falhou' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('O registro falhou:', error);
+    return { success: false, error: 'Erro de rede. Tente novamente.' };
+  }
+};
+
+export const logout = (): void => {
+  removeToken();
+  removeUser();
+};
+
+export const isAuthenticated = (): boolean => {
+  return !!getToken();
+};
+----------------------------
+
+frontend/src/App.tsx:
+
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import Navbar from './components/Navbar';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import HomePage from './pages/HomePage';
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;
+
+------------------
+
+frontend/src/index.css:
+
+/* Basic CSS reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.card {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: #4285f4;
+  outline: none;
+}
+
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background-color: #4285f4;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #3367d6;
+}
+
+.btn-danger {
+  background-color: #ea4335;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #d33426;
+}
+
+.btn-secondary {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e5e5;
+}
+
+.alert {
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.alert-error {
+  background-color: #fdeded;
+  color: #5f2120;
+  border: 1px solid #f5c2c7;
+}
+
+.alert-success {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  border: 1px solid #badbcc;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  text-decoration: none;
+}
+
+.navbar-nav {
+  display: flex;
+  gap: 15px;
+  list-style: none;
+}
+
+.nav-link {
+  color: #333;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: #4285f4;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.table th {
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.error-message {
+  color: #ea4335;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+-----------------
+
+frontend/src/main.tsx:
+
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+--------------------
+
+frontend/src/vite-env.d.ts:
+
+/// <reference types="vite/client" />
+
+-----------------------
+
+frontend/index.html:
+
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saferoad CRUD projeto</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
+
+---------------------
+
+frontend/eslint.config.js:
+
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  { ignores: ['dist'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  }
+);
+
+
+------------------------
+
+frontend/postcss.config.js:
+
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+-----------------------
+
+frontend/tailwind.config.js:
+
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+
+
+---------------------
+frontend/.env:
+
+VITE_API_URL=http://localhost:3000/api
+
+-----------------------
+
+
+

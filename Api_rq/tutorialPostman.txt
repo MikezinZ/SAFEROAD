@@ -22,3 +22,29 @@ http://localhost:3000/api/users/1
 
 
 Para rodar o servidor: npm run dev
+
+------------------------------------------
+
+Tutorial Postaman ATUALIZADO!
+
+POST - criar usuário
+https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev/api/auth/register
+
+LOGIN - POST
+https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev/api/auth/login
+
+GET - Fazer Login e usar o token do login no Authorization/AuthType/Bearer Token
+https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev/api/users
+
+
+GET - Obter usuário específico - (usar token)
+https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev/api/users/1
+
+POST - Criar novo usuário como admin - (usar o token)
+https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev/api/users
+
+PUT - atualizar usuário - (usar token)
+https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev/api/users/1
+
+DELETE - deletar usuário - (usar token)
+https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev/api/users/1

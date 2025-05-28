@@ -1,0 +1,13 @@
+Aaplicação começa com o Usuário acessando o frontend, que está hospedado na Vercel.
+
+Quando o usuário realiza uma ação, como um login, o frontend na Vercel faz uma requisição HTTPS para a minha API. A porta de entrada na nuvem AWS é o Amazon API Gateway.
+
+O API Gateway está configurado com um recurso proxy que invoca minha função AWS Lambda, passando a requisição original.
+
+A função Lambda, que contém a lógica do meu backend Node.js/Express, executa dentro de uma Subnet Privada na minha VPC para segurança.
+
+Para operações no banco, a Lambda faz uma requisição SQL para o Amazon RDS PostgreSQL, que também está em uma Subnet Privada.
+
+A comunicação entre a Lambda e o RDS é controlada por Security Groups, que agem como firewalls, garantindo que somente a minha função Lambda possa acessar o banco de dados.
+
+Dessa forma, a lógica da aplicação e o banco de dados estão seguros dentro da minha rede privada na AWS, e apenas o API Gateway fica exposto para receber requisições do frontend.

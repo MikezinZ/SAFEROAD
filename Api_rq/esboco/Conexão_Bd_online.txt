@@ -18,3 +18,5 @@ https://saferoad-rcqqz6ywp-miguel-melos-projects-f2fe7e07.vercel.app/
 
 
 att
+-----
+arquivo destinado a testes e para salvar informações usadas durante a produção.

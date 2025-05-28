@@ -1,0 +1,7 @@
+link frontend no vercel: http://saferoad-miguel-melos-projects-f2fe7e07.vercel.app
+Url backend-api lambda aws: https://rjvig45lse.execute-api.us-east-2.amazonaws.com/dev
+Endpoint rds postgree: saferoad-db-instance.ctgq6awc2dce.us-east-2.rds.amazonaws.com
+
+link GitHub: https://github.com/MikezinZ/SAFEROAD 
+
+link do Diagrama da Arquitetura AWS (Backend e Banco): https://www.mermaidchart.com/app/projects/9df7e0d4-a5c4-41dd-8c55-096a3509f977/diagrams/3919d390-bbca-4545-a9e6-25276115ad1b/version/v0.1/edit

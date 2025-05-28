@@ -1,0 +1,82 @@
+Documentação das Configurações e Decisões Técnicas – Migração SAFEROAD para AWS
+Introdução Breve: Este documento detalha as principais configurações e decisões técnicas tomadas durante a migração do backend e banco de dados da aplicação SAFEROAD para a Amazon Web Services (AWS). O objetivo foi construir uma arquitetura funcional, segura e escalável, utilizando serviços serverless e gerenciados.
+I. Arquitetura Geral Adotada na AWS
+Decisão Principal: Optou-se por uma arquitetura predominantemente serverless para o backend, visando escalabilidade automática, otimização de custos (pagamento por uso) e redução da carga de gerenciamento de infraestrutura. O banco de dados foi migrado para um serviço relacional gerenciado para garantir confiabilidade e segurança.
+Componentes Principais na AWS:
+Computação Backend: AWS Lambda (para o código Node.js/Express).
+Interface HTTP API: Amazon API Gateway (para expor a Lambda como uma API REST).
+Banco de Dados: Amazon RDS para PostgreSQL.
+Rede: Amazon VPC (com subnets públicas e privadas).
+Segurança: AWS IAM (Roles e Policies) e Security Groups.
+Armazenamento de Código Lambda (Intermediário): Amazon S3 (para o pacote .ZIP da função Lambda).
+II. Configurações Detalhadas por Serviço AWS
+A. Amazon VPC (Virtual Private Cloud – saferoad-vpc)
+
+
+Decisão: Utilizar uma VPC customizada para criar um ambiente de rede isolado e seguro para os recursos da aplicação.
+Configurações Chave:
+Bloco CIDR IPv4: 10.0.0.0/16 (fornecendo um amplo espaço de endereçamento privado).
+Zonas de Disponibilidade (AZs): 2 (para alta disponibilidade e resiliência dos recursos como subnets e RDS).
+Subnets:
+2 Subnets Públicas: Associadas a uma Tabela de Rotas com rota default para o Internet Gateway (IGW). Destinadas a recursos que podem precisar de acesso direto à internet (ex: NAT Gateway).
+2 Subnets Privadas: Associadas a uma Tabela de Rotas com rota default para o NAT Gateway. Destinadas a recursos que não devem ser publicamente acessíveis (AWS Lambda, Amazon RDS).
+Internet Gateway (IGW): Anexado à VPC para permitir comunicação entre as subnets públicas e a internet.
+NAT Gateway: Provisionado em uma das subnets públicas para permitir que instâncias nas subnets privadas (como a Lambda, se necessário para chamadas a APIs externas ou download de dependências em cenários específicos) iniciem conexões de saída para a internet, sem permitir conexões de entrada da internet para essas instâncias.
+B. Amazon RDS para PostgreSQL (saferoad-db-instance)
+
+
+Decisão: Migrar de um DBaaS externo (Neon) para o Amazon RDS para centralizar a infraestrutura na AWS, utilizando um serviço PostgreSQL gerenciado, robusto e escalável.
+Configurações Chave:
+Mecanismo: PostgreSQL (versão compatível com Free Tier, ex: 14.x ou 15.x).
+Template: "Free tier" selecionado durante a criação para alinhar com os limites de uso gratuito.
+Classe da Instância: db.tX.micro (conforme Free Tier).
+Armazenamento: 20GB SSD de Uso Geral (gp2/gp3).
+VPC: Implantado na saferoad-vpc.
+Grupo de Sub-redes do BD: Configurado para usar as Subnets Privadas.
+Acesso Público (Public access): Configurado como "Yes" para permitir a conexão inicial do backend hospedado na Render (externo à VPC) e para testes locais. O acesso é rigorosamente controlado pelo Security Group. (Em um cenário onde o backend também estivesse na mesma VPC, "No" seria o ideal).
+Security Group (VPC security group): saferoad-db-sg.
+Regra de Entrada Principal: Permitir tráfego TCP na porta 5432 (PostgreSQL) originado apenas do Security Group da função Lambda (saferoad-lambda-sg). (Regras para My IP ou 0.0.0.0/0 foram usadas temporariamente para testes e idealmente removidas/restringidas).
+Nome do Banco de Dados Inicial: saferoad_database (ou o nome definido).
+Credenciais: Usuário mestre e senha foram definidos e gerenciados externamente (não hardcoded).
+Proteção contra Exclusão: Desabilitada para facilitar o gerenciamento em ambiente de desenvolvimento/aprendizado.
+C. AWS Lambda (saferoad-backend-api)
+
+
+Decisão: Adotar uma arquitetura serverless para o backend utilizando AWS Lambda para obter escalabilidade automática, otimização de custos (pagamento por uso) e baixa sobrecarga de gerenciamento de servidores.
+Configurações Chave:
+Runtime: Node.js (ex: 20.x).
+Handler: src/index.handler (apontando para o arquivo index.js dentro da pasta src/ no pacote de deploy).
+Código Fonte: Pacote .ZIP (contendo a pasta src/, package.json, package-lock.json e node_modules de produção) enviado via Amazon S3.
+IAM Role (SaferoadLambdaExecutionRole): Configurada com as políticas gerenciadas AWSLambdaBasicExecutionRole (para logs no CloudWatch) e AWSLambdaVPCAccessExecutionRole (para permitir que a função opere dentro da VPC e acesse o RDS).
+Configuração de VPC:
+Habilitada e conectada à saferoad-vpc.
+Subnets: Associada às Subnets Privadas.
+Security Group: Associada ao saferoad-lambda-sg. (Este SG tem uma regra de saída padrão permitindo todo o tráfego, o que permite à Lambda acessar o RDS e o NAT Gateway).
+Variáveis de Ambiente:
+DATABASE_URL: String de conexão do banco de dados AWS RDS PostgreSQL.
+JWT_SECRET: Segredo utilizado para assinar e verificar os tokens JWT.
+NODE_ENV: Definido como production_lambda.
+Recursos: Memória configurada para 512 MB e Timeout para 30 segundos (ajustados para a aplicação Express/Sequelize).
+D. Amazon API Gateway (SaferoadAPI)
+
+
+Decisão: Utilizar como o "front door" HTTP para a função Lambda, gerenciando as rotas, a exposição da API de forma segura e escalável.
+Configurações Chave:
+Tipo de API: API REST, com endpoint do tipo Regional.
+Recursos e Métodos: Configurado com um Recurso Proxy /{proxy+} e um método ANY (ou métodos HTTP individuais: GET, POST, PUT, DELETE, OPTIONS) para encaminhar todas as requisições para a função Lambda.
+Tipo de Integração: "Lambda Proxy Integration" com a função saferoad-backend-api.
+CORS: Habilitado diretamente no recurso /{proxy+} do API Gateway para permitir requisições da origem do frontend na Vercel (https://saferoad-lime.vercel.app). O API Gateway gerencia o método OPTIONS e os cabeçalhos CORS necessários.
+Deploy: A API foi implantada em um estágio (ex: dev), gerando uma "Invoke URL" pública que é utilizada pelo frontend.
+III. Considerações de Segurança Implementadas
+Utilização de variáveis de ambiente (gerenciadas pela Lambda e, idealmente, por serviços como Secrets Manager em produção mais avançada) para armazenar informações sensíveis como DATABASE_URL e JWT_SECRET.
+Backend (Lambda) e Banco de Dados (RDS) operando em subnets privadas, não diretamente acessíveis da internet.
+Comunicação entre Lambda e RDS controlada estritamente por Security Groups, seguindo o princípio do menor privilégio (apenas a Lambda SG pode acessar o RDS SG na porta específica).
+Uso de HTTPS através do API Gateway e CloudFront (implícito pela Vercel).
+IV. Processo de Deploy (Resumido)
+Backend (AWS Lambda): Código Node.js/Express adaptado com serverless-http, dependências de produção instaladas, empacotado em .ZIP, enviado para S3, e função Lambda configurada para usar este pacote do S3. Variáveis de ambiente configuradas na Lambda.
+API Gateway: Configurado para rotear requisições para a Lambda e deployado para um estágio público.
+Frontend (Vercel): Build do React/Vite pela Vercel, com a variável de ambiente VITE_API_URL configurada para apontar para a "Invoke URL" do API Gateway.
+Miguel Henrique,
+Diego Ximenes,
+Lewi Gabriel,						                
+Lucas Maciel.						                  Faculdade Nova Roma, 2025
