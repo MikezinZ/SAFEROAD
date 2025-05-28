@@ -102,3 +102,16 @@ teste com banco aws rds
     }
 }
 ----------------------
+
+                    TESTE NOVO - BACKEND NO LAMBDA
+
+
+
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsImVtYWlsIjoibWlndWVsemluaG9AZXhhbXBsZS5jb20iLCJpYXQiOjE3NDg0MDMwNTUsImV4cCI6MTc0ODQ4OTQ1NX0.iqUT4bhcKcmpgsZgQpQRweEaFCSLfRGKnsm1nbWlGS0",
+    "user": {
+        "id": 11,
+        "username": "miguelzinho",
+        "email": "miguelzinho@example.com",
+        "senha": "senha123"
+    }
+    
