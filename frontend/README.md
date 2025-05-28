@@ -118,3 +118,10 @@ O projeto também vem com um conjunto de ferramentas para otimizar o desenvolvim
 ---
 
 Este frontend do SAFEROAD é uma aplicação React robusta, focada em **segurança na autenticação**, **gestão de dados via CRUD** e uma **experiência de usuário impecável** com validações, feedback visual e navegação intuitiva.
+
+
+GRUPO SAFEROAD
+- Diego Ximenes
+- Lewi Gabriel 
+- Lucas Maciel 
+- Miguel Henrique
