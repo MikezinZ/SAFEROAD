@@ -1,110 +1,151 @@
-# 🚀 SAFEROAD: Visão Geral do Backend
-
-Este documento detalha as funcionalidades, tecnologias e a estrutura de código do backend da aplicação SAFEROAD.
-
-----
-
-## 💻 Tecnologias Utilizadas no Backend
-
-O coração do nosso backend é construído com ferramentas e frameworks modernos para garantir eficiência e segurança:
-
-* **Node.js & Express:** 🌐 A base da nossa API, fornecendo um ambiente robusto para a construção de serviços web.
-* **SQLite:** 📦 Nosso banco de dados, uma solução leve e baseada em arquivo, perfeita para desenvolvimento. Você pode encontrá-lo em `env/database.sqlite`.
-* **Sequelize:** 🗺️ Um Mapeador Objeto-Relacional (ORM) que simplifica a interação com o banco de dados, transformando tabelas em objetos JavaScript para facilitar o desenvolvimento.
-* **JWT (JSON Web Tokens):** 🔑 Essencial para a **autenticação segura de usuários**. Permite que os usuários façam login uma vez e continuem acessando recursos protegidos sem precisar inserir suas credenciais repetidamente.
-* **Bcryptjs:** 🔒 Uma biblioteca crucial para a **segurança das senhas**. Ela hasheia as senhas dos usuários antes de armazená-las no banco de dados, protegendo-as contra acessos não autorizados.
-* **CORS (Cross-Origin Resource Sharing):** ↔️ Permite que o frontend (que roda em uma porta ou domínio diferente) se comunique livremente com o backend, garantindo que as requisições não sejam bloqueadas por políticas de segurança do navegador.
-* **Swagger UI Express & Swagger-JSDoc:** 📖 Ferramentas incríveis para a **documentação da API**. Elas geram automaticamente uma documentação interativa a partir dos comentários no nosso código, facilitando para outros desenvolvedores (e para nós mesmos!) entenderem e testarem os endpoints.
-* **Express-Validator:** ✅ Um middleware que nos ajuda a **validar os dados de entrada** nas requisições, garantindo que o email esteja no formato correto ou que a senha tenha o comprimento mínimo exigido.
-* **Nodemon:** 🔄 Uma ferramenta de desenvolvimento que **reinicia automaticamente** o servidor Node.js a cada alteração de arquivo, agilizando o processo de codificação e teste.
+Com certeza! Vamos estruturar e aprimorar este documento para que ele fique ainda mais claro e profissional.
 
 ---
 
-## ✨ Principais Funcionalidades
+# SAFEROAD: Visão Geral do Backend 🚀
 
-Nosso backend foi projetado para oferecer duas áreas principais de funcionalidade: **Autenticação de Usuários** e **Gerenciamento de Usuários (CRUD)**.
-
-### 1. Autenticação de Usuários 🔐
-
-Os arquivos `authController.js` e `authRoutes.js` são responsáveis por toda a lógica de autenticação:
-
-* **Registro de Usuário (POST /api/auth/register)**:
-    * Novos usuários podem criar uma conta informando nome, email e senha.
-    * **Segurança em Primeiro Lugar**: Antes de salvar a senha no banco de dados, ela é **hasheada** com bcryptjs (graças a um hook beforeCreate no modelo User).
-    * Após o registro bem-sucedido, o usuário recebe um **JWT** para futuras interações com a API.
-* **Login de Usuário (POST /api/auth/login)**:
-    * Usuários existentes podem acessar sua conta com email e senha.
-    * A senha fornecida é **verificada** contra a senha hasheada armazenada.
-    * Com credenciais válidas, um novo **JWT** é emitido, concedendo acesso às rotas protegidas.
-* **Middleware de Autenticação (auth.js)**:
-    * Este middleware é o "segurança" das nossas rotas! 👮‍♂️ Ele verifica o JWT em cada requisição para rotas protegidas.
-    * Extrai o token do cabeçalho Authorization, o verifica com nosso JWT_SECRET, e se for válido, adiciona as informações do usuário decodificadas ao objeto da requisição (req.user).
-    * Caso não haja token ou ele seja inválido, uma resposta 401 Não Autorizado é retornada.
-
-### 2. Gerenciamento de Usuários (Operações CRUD) 🧑‍💻
-
-Os arquivos `userController.js` e `userRoutes.js` cuidam das operações de Criar, Ler, Atualizar e Excluir usuários (CRUD). Todas essas rotas são **protegidas pelo middleware de autenticação**, garantindo que apenas usuários autorizados possam acessá-las.
-
-* **Obter Todos os Usuários (GET /api/users)**:
-    * Retorna uma lista de todos os usuários cadastrados no banco de dados.
-    * Para garantir a privacidade, apenas id, nome e email são retornados.
-* **Obter Usuário por ID (GET /api/users/:id)**:
-    * Busca os detalhes de um usuário específico utilizando seu ID.
-    * Também retorna apenas id, nome e email.
-* **Criar Usuário (POST /api/users)**:
-    * Permite a criação de um novo usuário. Esta rota é mais utilizada para propósitos internos ou por administradores, já que o registro primário é feito via /api/auth/register.
-* **Atualizar Usuário (PUT /api/users/:id)**:
-    * Modifica os detalhes de um usuário existente com base no seu ID.
-    * Permite a atualização dos campos nome e email.
-* **Excluir Usuário (DELETE /api/users/:id)**:
-    * Remove um usuário do banco de dados a partir do seu ID.
+Este documento detalha as funcionalidades, tecnologias e a estrutura de código do backend da aplicação SAFEROAD, responsável pela gestão de usuários e autenticação.
 
 ---
 
-## 🗄️ Gerenciamento do Banco de Dados
+## Tecnologias Utilizadas no Backend 💻
 
-* **Modelos Sequelize (models/ diretório):**
-    * `user.js`: Define o **modelo User**, especificando campos como id, nome, email e senha, junto com seus tipos de dados. Inclui o hook beforeCreate para o hash da senha e um método validatePassword para comparar senhas.
-    * `index.js`: Exporta a instância do sequelize e o modelo User, tornando-os facilmente acessíveis em toda a aplicação.
-* **Configuração do Banco de Dados (config/database.js):**
-    * Configura a instância do Sequelize para se conectar ao arquivo do banco de dados SQLite (database.sqlite).
-    * O sequelize.sync() em index.js garante que o esquema do banco de dados seja **sincronizado** com os modelos definidos sempre que a aplicação é iniciada.
+O coração do nosso backend é construído com um conjunto de ferramentas e bibliotecas robustas, garantindo performance, segurança e fácil manutenção:
 
----
-
-## ⚙️ Configuração do Servidor e Utilitários
-
-* **Arquivo Principal da Aplicação (index.js)**:
-    * É o ponto de entrada da nossa aplicação Express.
-    * Configura o **CORS** para gerenciar requisições de diferentes origens.
-    * Usa express.json() para processar os dados JSON enviados nas requisições.
-    * Integra o **Swagger** para a documentação da API, disponível em /api-docs.
-    * Possui um tratamento de erros global para lidar com exceções.
-    * Define um endpoint de **saúde** (/health) para verificar se o servidor está funcionando.
-    * Inicia o servidor após a sincronização bem-sucedida com o banco de dados.
-* **Variáveis de Ambiente (.env)**:
-    * O JWT_SECRET (chave secreta para os tokens JWT) e a PORTA do servidor são carregados a partir deste arquivo. Isso mantém informações sensíveis e configurações separadas do código-fonte principal, facilitando a implantação em diferentes ambientes.
-* **Testes (tests/auth.test.js)**:
-    * Inclui testes unitários básicos para os endpoints de autenticação (registro e login) usando supertest e jest. Isso mostra nosso compromisso em garantir a qualidade e a confiabilidade das funcionalidades centrais da API.
+* **Node.js & Express**: A espinha dorsal da nossa API RESTful. O Node.js oferece um ambiente de execução JavaScript no servidor, enquanto o Express provê um framework minimalista e flexível para a construção de APIs e aplicações web.
+* **Sequelize & PostgreSQL/SQLite**: Para o ambiente de desenvolvimento, usamos **SQLite**, um banco de dados leve baseado em arquivo (`database.sqlite`). A interação com o banco é gerenciada pelo **Sequelize**, um ORM (Object-Relational Mapper) baseado em Promises para Node.js. Ele simplifica a definição de modelos, migrações e consultas, estando preparado para **PostgreSQL** em produção (configurado para RDS, conforme `src/index.js`).
+* **JWT (JSON Web Tokens)**: Implementado com a biblioteca `jsonwebtoken`, é crucial para uma **autenticação segura e *stateless***. Após o login, um token é gerado e enviado ao cliente, que o utiliza para autenticar requisições subsequentes a rotas protegidas.
+* **Bcryptjs**: Essencial para a **segurança das senhas**. Esta biblioteca é utilizada para gerar um **hash seguro** das senhas dos usuários antes de armazená-las no banco de dados, empregando um *salt* para prevenir ataques de *rainbow table*. A verificação da senha durante o login compara o hash da senha fornecida com o hash armazenado.
+* **CORS (Cross-Origin Resource Sharing)**: O *middleware* `cors` é configurado para permitir que aplicações frontend, hospedadas em origens diferentes (domínio, protocolo ou porta), façam requisições para a API do backend, contornando a *Same-Origin Policy* dos navegadores.
+* **Swagger UI Express & Swagger-JSDoc**: Ferramentas que geram e servem uma **documentação interativa da API**. `swagger-jsdoc` lê anotações JSDoc nos arquivos de rotas (`src/routes/*.js`) para criar uma especificação OpenAPI. Já o `swagger-ui-express` apresenta essa especificação em uma interface web amigável, acessível em `/api-docs`.
+* **Express-Validator**: *Middleware* para a **validação e sanitização dos dados** recebidos no corpo das requisições (request body). Ajuda a garantir que dados como e-mail e senha estejam no formato esperado antes de serem processados pelos *controllers*.
+* **Dotenv**: Carrega **variáveis de ambiente** de um arquivo `.env` para `process.env`, permitindo isolar configurações sensíveis (como `JWT_SECRET`, `PORT` e credenciais de banco de dados) do código-fonte.
+* **Serverless-http**: Um adaptador que possibilita que a aplicação Express seja executada em **ambientes *serverless***, como o AWS Lambda, encapsulando o aplicativo Express em um *handler* compatível.
+* **(Potencialmente) Nodemon**: Embora não explicitamente detalhado nos trechos, `nodemon` é frequentemente usado em desenvolvimento Node.js (geralmente configurado no script `dev` do `package.json`) para **reiniciar automaticamente o servidor** a cada alteração nos arquivos, agilizando o ciclo de desenvolvimento.
 
 ---
 
-## 🌳 Estrutura do Projeto Backend
+## Principais Funcionalidades ✨
 
-O backend segue uma estrutura clara e modular, com as responsabilidades bem divididas entre os diretórios:
+O backend da SAFEROAD foca em duas áreas cruciais: **Autenticação Segura** e **Gerenciamento Completo de Usuários (CRUD)**.
 
-* **`config/`**: ⚙️ Configurações importantes, como a do banco de dados.
-* **`controllers/`**: 🚦 Lógica principal para processar as requisições e interagir com os modelos.
-* **`middleware/`**: 🛡️ Funções intermediárias reutilizáveis, como o middleware de autenticação.
-* **`models/`**: 📝 Definição dos esquemas do banco de dados e seus relacionamentos.
-* **`routes/`**: 🛣️ Gerencia os endpoints da API e os direciona para as funções do controlador.
-* **`tests/`**: 🧪 Contém todos os testes de unidade e integração para garantir o bom funcionamento do sistema.
+### 1. Autenticação de Usuários 🔑
 
-Essa abordagem organizada torna o backend muito mais fácil de entender, manter e escalar à medida que o projeto cresce!
+A lógica de autenticação está concentrada em `src/controllers/authController.js`, `src/routes/authRoutes.js` e nos *middlewares* `src/middleware/auth.js` e `src/middleware/authorize.js`.
 
-*GRUPO SAFEROAD* 
-*integrantes*: 
--Diego Ximenes
--Lewi Gabriel 
--Lucas Maciel 
--Miguel Henrique  
+* **Registro de Novo Usuário (`POST /api/auth/register`)**:
+    * Permite que novos usuários se cadastrem fornecendo `nome`, `email` e `senha`.
+    * A rota usa `express-validator` para validar os dados de entrada.
+    * Um *hook* `beforeCreate` no modelo Sequelize (`src/models/user.js`) intercepta a operação e utiliza `bcryptjs` para gerar um hash seguro da senha antes de salvá-la.
+    * Após o registro bem-sucedido, um **JWT é gerado e retornado** ao usuário, junto com informações básicas do perfil criado.
+* **Login de Usuário Existente (`POST /api/auth/login`)**:
+    * Autentica usuários com base no `email` e `senha`.
+    * O *controller* busca o usuário pelo e-mail e, se encontrado, utiliza o método `validatePassword` (definido no modelo `User`) que emprega `bcrypt.compare` para verificar a senha fornecida.
+    * Se as credenciais forem válidas, um **novo JWT é gerado** (contendo ID, e-mail e *role* do usuário) e retornado, concedendo acesso às rotas protegidas da API.
+* **Middleware de Autenticação (`src/middleware/auth.js`)**:
+    * Atua como um **guardião para as rotas que exigem autenticação**.
+    * Extrai o token JWT do cabeçalho `Authorization` (formato `Bearer`) de cada requisição.
+    * Utiliza `jwt.verify` e a `JWT_SECRET` (carregada do `.env`) para validar o token.
+    * Se o token for válido, as informações decodificadas do usuário (payload do token) são anexadas ao objeto `req` (como `req.user`).
+    * Se o token estiver ausente ou for inválido, retorna um **erro 401 Unauthorized**, bloqueando o acesso.
+* **Middleware de Autorização (`src/middleware/authorize.js`)**:
+    * Complementa a autenticação, verificando se o usuário autenticado (`req.user.role`) possui a **permissão necessária** (*role*) para acessar um recurso ou executar uma ação específica.
+    * Recebe um array de *roles* permitidas e retorna um **erro 403 Forbidden** se o usuário não tiver a *role* adequada.
+
+---
+
+### 2. Gerenciamento de Usuários (Operações CRUD) 📊
+
+As operações de Criar, Ler, Atualizar e Excluir (CRUD) para a entidade de usuários são gerenciadas por `src/controllers/userController.js` e `src/routes/userRoutes.js`. Todas as rotas em `userRoutes.js` são **protegidas pelo `authMiddleware`**, garantindo que apenas usuários autenticados possam interagir com elas.
+
+* **Listar Todos os Usuários (`GET /api/users`)**:
+    * Retorna uma **lista paginada** de todos os usuários cadastrados.
+    * Utiliza `User.findAndCountAll` do Sequelize com `limit` e `offset` (calculados a partir dos parâmetros de consulta `page` e `limit`).
+    * Por segurança e privacidade, apenas os campos `id`, `nome`, `email` e `role` são retornados, junto com informações de paginação (total de itens, total de páginas, página atual).
+* **Obter Usuário por ID (`GET /api/users/:id`)**:
+    * Busca e retorna os detalhes de um usuário específico, identificado pelo `id` fornecido na URL.
+    * Utiliza `User.findByPk` e retorna apenas os atributos `id`, `nome` e `email`.
+    * Retorna **404 Not Found** se nenhum usuário com o ID especificado for encontrado.
+* **Criar Novo Usuário (`POST /api/users`)**:
+    * Permite a criação de um novo usuário através de uma requisição `POST`.
+    * Esta rota pode ser usada para criação direta (potencialmente por administradores, dependendo da aplicação do *middleware* `authorize`).
+    * Utiliza `User.create` e retorna os dados básicos do usuário criado (`id`, `nome`, `email`) com status **201 Created**.
+* **Atualizar Usuário (`PUT /api/users/:id`)**:
+    * Permite modificar os dados de um usuário existente, identificado pelo `id`.
+    * O *controller* primeiro busca o usuário com `User.findByPk`.
+    * Se encontrado, chama o método `user.update(req.body)` para aplicar as alterações.
+    * Retorna os dados atualizados do usuário.
+* **Excluir Usuário (`DELETE /api/users/:id`)**:
+    * Remove um usuário do banco de dados.
+    * Busca o usuário pelo `id` e, se encontrado, chama `user.destroy()`.
+    * Retorna uma resposta **204 No Content** em caso de sucesso. Esta rota exige que o usuário autenticado tenha a *role* de `admin` (`authorize(['admin'])`).
+
+---
+
+## Gerenciamento do Banco de Dados com Sequelize 🗄️
+
+A interação com o banco de dados é totalmente abstraída e gerenciada pelo Sequelize ORM.
+
+* **Modelos (`src/models/`)**:
+    * `user.js`: Define o modelo `User` com seus atributos (`id`, `nome`, `email`, `senha`, `role`), tipos de dados (`DataTypes`), validações (`isEmail`) e restrições (`allowNull`, `unique`). Inclui o *hook* `beforeCreate` para o *hashing* da senha com `bcryptjs` e o método de instância `validatePassword` para a comparação de senhas.
+    * `index.js`: Centraliza a importação da configuração do Sequelize (`../config/database`) e dos modelos definidos (apenas `User` neste caso). Exporta a instância do `sequelize` e os modelos, facilitando o acesso em outras partes da aplicação (ex: `const { User } = require('../models');`).
+* **Configuração (`src/config/database.js`)**:
+    * Configura a instância do Sequelize, especificando o dialeto do banco de dados (`postgres` para produção, `sqlite` para desenvolvimento), o local de armazenamento do arquivo (`../database.sqlite` para SQLite) e outras opções de conexão necessárias (carregadas de variáveis de ambiente para produção, como `DATABASE_URL`).
+* **Sincronização (`src/index.js`)**:
+    * A linha `sequelize.sync()` no arquivo principal garante que as tabelas no banco de dados correspondam aos modelos definidos no Sequelize. Ao iniciar a aplicação, o Sequelize verifica se as tabelas existem e as cria ou atualiza conforme necessário. Isso é útil para desenvolvimento, mas em produção, geralmente são preferidas ferramentas de migração mais controladas.
+
+---
+
+## Configuração do Servidor e Utilitários ⚙️
+
+O ponto de entrada e a configuração geral do servidor são gerenciados principalmente em `src/index.js`.
+
+* **Arquivo Principal (`src/index.js`)**:
+    * Inicializa a aplicação Express (`const app = express();`).
+    * Carrega variáveis de ambiente com `require('dotenv').config();`.
+    * Configura *middlewares* essenciais: `cors()` para habilitar requisições *cross-origin* e `express.json()` para *parsear* corpos de requisição JSON.
+    * Configura o **Swagger UI**, definindo as opções (`swaggerOptions`) que especificam a versão do OpenAPI, informações da API, servidores e esquemas de segurança (*Bearer Auth* para JWT), e indicando onde encontrar as anotações (`apis: ['./src/routes/*.js']`). Monta a interface do Swagger em `/api-docs`.
+    * Registra as rotas da aplicação, montando `authRoutes` em `/api/auth` e `userRoutes` em `/api/users`.
+    * Define um **endpoint de *health check*** (`GET /health`) que retorna um status `OK` se o backend estiver operacional.
+    * Implementa um **middleware de tratamento de erro global** que captura exceções não tratadas, *loga* o erro e retorna uma resposta `500 Internal Server Error` genérica.
+    * Chama `sequelize.sync()` para sincronizar os modelos com o banco de dados e, em seguida, inicia o servidor Express (`app.listen`) na porta definida por `process.env.PORT` (ou `3000` como padrão), mas apenas se não estiver em ambiente de produção Lambda (`process.env.NODE_ENV !== 'production_lambda'`).
+    * Exporta o *handler* do `serverless-http` para compatibilidade com ambientes *serverless*.
+* **Variáveis de Ambiente (`.env`)**:
+    * Arquivo crucial (não versionado no Git) que armazena **configurações específicas do ambiente**, como `JWT_SECRET` (a chave secreta para assinar e verificar tokens JWT), `PORT` (a porta onde o servidor escutará) e `DATABASE_URL` para a conexão com o banco de dados.
+* **Testes (`src/tests/auth.tests.js`)**:
+    * O arquivo demonstra a presença de **testes automatizados** (provavelmente usando Jest e Supertest). Testes são fundamentais para garantir a correção e a estabilidade da API, especialmente para funcionalidades críticas como autenticação.
+
+---
+
+## Estrutura do Projeto Backend 📁
+
+O backend adota uma estrutura de diretórios modular e organizada, facilitando a navegação, manutenção e escalabilidade:
+
+```
+backend/
+├── node_modules/       # 📦 Dependências instaladas via npm/yarn
+├── src/
+│   ├── config/         # ⚙️ Arquivos de configuração (ex: database.js)
+│   ├── controllers/    # 🎯 Lógica de negócio e resposta às requisições (ex: authController.js, userController.js)
+│   ├── middleware/     # 🚦 Funções intermediárias (ex: auth.js, authorize.js)
+│   ├── models/         # 📊 Definições dos modelos Sequelize (ex: user.js, index.js)
+│   ├── routes/         # 🛣️ Definição das rotas da API (ex: authRoutes.js, userRoutes.js)
+│   ├── tests/          # 🧪 Suíte de testes automatizados (ex: auth.tests.js)
+│   └── index.js        # 🚀 Ponto de entrada da aplicação Express
+├── .env                # 🔑 Arquivo para variáveis de ambiente (não versionado)
+├── database.sqlite     # 💾 Arquivo do banco de dados SQLite (desenvolvimento)
+├── package-lock.json   # 🔒 Lockfile de dependências
+├── package.json        # 📄 Metadados do projeto, scripts e dependências
+└── README.md           # 📖 README geral do projeto (ou este arquivo se for o README do backend)
+```
+
+Esta estrutura separa claramente as responsabilidades (configuração, controle, modelos, rotas, *middlewares*, testes), aderindo a princípios como o MVC (*Model-View-Controller*) e facilitando o desenvolvimento e a colaboração em equipe.
+
+---
+
+**GRUPO SAFEROAD**
+**Integrantes:**
+* Diego Ximenes
+* Lewi Gabriel
+* Lucas Maciel
+* Miguel Henrique
