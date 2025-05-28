@@ -81,6 +81,8 @@ novo banco:
 
 
 --------------------
+
+teste com banco aws rds
 {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJyZHNfdGVzdGVAZXhhbXBsZS5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc0ODM4NzIzMywiZXhwIjoxNzQ4NDczNjMzfQ.P3tTCycAESJKC2bqKMn0iaAglpdIWMQQBXbXHu6d0ao",
     "user": {
@@ -88,6 +90,15 @@ novo banco:
         "nome": "UsuarioNoRDS",
         "email": "rds_teste@example.com",
         "senha": "password123rds"
+    }
+}
+
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQ4Mzg5MjI3LCJleHAiOjE3NDg0NzU2Mjd9.D1gq-X_OoLr7-EzAJtTl9hVEY65N4wwaGTTKKuMZwog",
+    "user": {
+        "id": 2,
+        "nome": "Super Admin",
+        "email": "admin@example.com"
     }
 }
 ----------------------
