@@ -1,6 +1,6 @@
 
 SAFEROAD
- │ Frontend (pendente)
+ │ Frontend 
  │ ├── node_modules/ [✓]
  │ ├── src/ [✓]
  │ │   ├── components/ [✓]
